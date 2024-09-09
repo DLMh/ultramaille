@@ -8,7 +8,8 @@
         
         echo "Paramètres manquants dans l'URL.";
     }
-    $sql = "  Select NumOF,NomCollect,RefCde,RefCRM from OF_Liste where ClientID=".$id;
+    $sql = "SELECT RefCRM, RefCde,CASE WHEN RefCRM IS NOT NULL AND RefCde IS NOT NULL THEN STRING_AGG(NumOF, '-') ELSE MAX(NumOF) END AS NumOF, CASE WHEN RefCRM IS NOT NULL AND RefCde IS NOT NULL THEN STRING_AGG(NomCollect, '/') ELSE MAX(NomCollect) END AS NomCollect FROM OF_Liste WHERE Clos=0 and ClientID=".$id."GROUP BY RefCRM, RefCde";
+    
     $res=sqlsrv_query($con, $sql);
     
 
@@ -60,7 +61,7 @@
             </button>
         </a>
     </div>
-    <div class="container mt-5">
+    <div class="container mt-4">
         <h1 class="text-center">Listes des réferences commandes par client</h1>
         
         <!-- Table HTML -->
@@ -71,6 +72,7 @@
                     <th>Collection</th>
                     <th>Réference Commandes</th>
                     <th>Réference CRM</th>
+                    <th>Status</th>
                     <th></th>
                     <th></th>
                 </tr>
@@ -83,12 +85,13 @@
                         <td><?php echo htmlspecialchars(mb_convert_encoding($row['NomCollect'], 'UTF-8', 'auto'), ENT_QUOTES, 'UTF-8'); ?></td>
                         <td><?php   echo $row['RefCde']; ?></td>
                         <td><?php  echo $row['RefCRM']; ?></td>
+                        <td>...</td>
                         <td>
-                            <a href="suivi.php?of=<?php echo $row['NumOF']?>">
+                            <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>">
                                 <button class="btn btn-info">Suivi</button>
                             </a>
                         </td>
-                        <td><button class="btn btn-warning">Packing list</button></td>
+                        <td><button class="btn btn-warning">Packing</button></td>
                     </tr>
                 
                 <?php } ?>

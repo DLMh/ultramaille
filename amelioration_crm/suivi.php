@@ -24,9 +24,6 @@ try {
     $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Afficher les résultats
-    foreach ($result as $row) {
-        print_r($row);
-    }
 
     // // Si vous avez besoin du retour de valeur
     // $return_value = $pdo->query("SELECT 'Return Value' = @return_value")->fetchColumn();
