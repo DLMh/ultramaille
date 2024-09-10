@@ -1,6 +1,5 @@
- <?php //Initialisation des variables
-
- include("../../admin/databases/db_sql_server.php");
+<?php 
+include("../../admin/databases/db_sql_server.php");
 
 // Vérification des paramètres GET
 if (isset($_GET['refcde'])) {
@@ -11,6 +10,7 @@ if (isset($_GET['refcde'])) {
     echo "Paramètres manquants dans l'URL.";
     exit;
 }
+
 // Requête pour récupérer les informations sur les OF
 $sql = "SELECT NumOF, NomCollect, RefCde, RefCRM,
         (SELECT COUNT(*) FROM OF_Liste WHERE Clos=0 AND ClientID =".$ClientID." AND RefCRM ='".$RefCRM."' AND RefCde ='".$RefCde."') AS total_lignes 
@@ -22,14 +22,13 @@ if ($res === false) {
     die(print_r(sqlsrv_errors(), true));
 }
 
+// Initialisation des variables
 $var = 0;
 $ofList = [];
 $singleOFValues = [];
 $previous_color = null; // Variable pour suivre la couleur précédente
-
-// Préparation pour stockage des valeurs par nom d'opération et couleur
-$operation_values = []; // Tableau pour stocker les valeurs par opération et couleur
-
+// Préparation pour stockage des sommes par nom d'opération
+    $sums = []; // Tableau pour stocker les sommes de finis1 par nom d'opération
 while ($row = sqlsrv_fetch_array($res, SQLSRV_FETCH_ASSOC)) {
     if ($row['total_lignes'] > 1) {
         $var = $row['total_lignes'];
@@ -50,34 +49,40 @@ if ($var != 0) {
         }
 
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+
+            // Calcul des sommes de finis1.2.retouches par nom d'opération
             $nom_operation = $row['NomOper'];
             $finis1 = $row['Finis1'];
             $finis2 = $row['Finis2'];
             $retouches = $row['Retouches'];
-            $couleur = $row['Couleur'];
-            $taille = $row['Tailles'];
-           
-            // Si l'opération n'existe pas encore dans le tableau, on l'initialise
-            if (!isset($operation_values[$nom_operation])) {
-                $operation_values[$nom_operation] = [];
-            }
-            // Si la couleur n'existe pas encore pour l'opération, on l'ajoute sans somme
-            if (!isset($operation_values[$nom_operation][$couleur])) {
-                $operation_values[$nom_operation][$couleur] = [];
-            }
-            // Si la couleur n'existe pas encore pour l'opération, on l'ajoute sans somme
-            if (!isset($operation_values[$nom_operation][$couleur][$taille])) {
-                $operation_values[$nom_operation][$couleur][$taille] = [
-                    'finis1' => $finis1,
-                    'finis2' => $finis2,
-                    'retouches' => $retouches
+            $couleur = $row['Couleur']; 
+            $taille = $row['Tailles']; 
+            
+            // Si le nom d'opération n'existe pas encore dans le tableau, on l'initialise à 0
+            if (!isset($sums[$nom_operation])) {
+                  $sums[$nom_operation] = [
+                    'finis1' => 0,
+                    'finis2' => 0,
+                    'retouches' => 0,
+                    'couleurs' => [],
+                    'tailles' => []
                 ];
-            } else {
-             // Si la taille existe déjà pour cette couleur, on met à jour les sommes
-                $operation_values[$nom_operation][$couleur][$taille]['finis1'] += $finis1;
-                $operation_values[$nom_operation][$couleur][$taille]['finis2'] += $finis2;
-                $operation_values[$nom_operation][$couleur][$taille]['retouches'] += $retouches;
             }
+
+        
+            
+            
+                // Ajouter la valeur de finis1 à la somme correspondante
+                    $sums[$nom_operation]['finis1'] += $finis1;
+                    $sums[$nom_operation]['finis2'] += $finis2;
+                    $sums[$nom_operation]['retouches'] += $retouches;
+                // Ajouter la couleur et la taille si elles ne sont pas déjà présentes
+                if (!in_array($couleur, $sums[$nom_operation]['couleurs'])) {
+                    $sums[$nom_operation]['couleurs'][] = $couleur;
+                }
+                if (!in_array($taille, $sums[$nom_operation]['tailles'])) {
+                    $sums[$nom_operation]['tailles'][] = $taille;
+                }
         }
 
         sqlsrv_free_stmt($stmt);
@@ -94,8 +99,7 @@ if ($var != 0) {
     if ($stmt === false) {
         die(print_r(sqlsrv_errors(), true));
     }
-
-    // Stocker directement les valeurs retournées par la procédure pour un seul OF
+     // Stocker directement les valeurs retournées par la procédure pour un seul OF
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $singleOFValues[] = [
             'operation' => $row['NomOper'],
@@ -106,7 +110,6 @@ if ($var != 0) {
             'taille' => $row['Tailles']
         ];
     }
-
     sqlsrv_free_stmt($stmt);
 }
 ?>
@@ -127,7 +130,7 @@ if ($var != 0) {
     <link rel="icon" href="../general/image/UTM_logo_sans_fond.png">
 </head>
 <body>
-      <nav class="navbar navbar-expand-md sticky-top navbar-shrink py-3 navbar-light" id="mainNav">
+    <nav class="navbar navbar-expand-md sticky-top navbar-shrink py-3 navbar-light" id="mainNav">
         <div class="container"><img src="../general/assets/img/Logo-Ultramaille-1.png" style="width: 97px;"><button class="navbar-toggler" data-bs-toggle="collapse"><span class="visually-hidden">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
             <h1 class="text-light-emphasis" data-aos="fade-down">Ultramaille Tools Management</h1>
             <div><a href="#"><i class="fa fa-cog" style="font-size: 20px;margin-right: 20px;margin-top: 0px;"></i></a><a href="../helpdesk/nouvelle-page.php"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-circle-fill text-warning" style="margin-right: 20px;font-size: 17px;">
@@ -144,8 +147,9 @@ if ($var != 0) {
         </div>
     </nav>
     <!-- si une seule OF -->
-    <?php if ($var == 0) { ?>
-        <?php foreach ($singleOFValues as $res) { ?>
+    <?php if($var==0) { ?>
+        <?php foreach($singleOFValues as $res) {?>
+           <!-- Si un seul OF, afficher directement les valeurs -->
         <p>
             Nom opération: <?php echo $res['operation']; ?><br>
             Finis1: <?php echo $res['finis1']; ?><br>
@@ -155,42 +159,20 @@ if ($var != 0) {
             Taille: <?php echo $res['taille']; ?><br>
         </p>
         <?php } ?>
-    <?php } else { ?>
-        <!-- debut  -->
-    <?php
-    $grouped_by_color = [];
-
-        // Regrouper les opérations par couleur et taille
-        foreach ($operation_values as $operation => $colors) {
-            foreach ($colors as $couleur => $tailles) {
-                if (!isset($grouped_by_color[$couleur])) {
-                    $grouped_by_color[$couleur] = [];
-                }
-                $grouped_by_color[$couleur][$operation] = $tailles; // Regrouper par taille aussi
-            }
-        }
-    ?>
-
-    <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
-        <h3 class="text-info">Couleur: <?php echo $couleur; ?></h3>
-        <?php foreach ($operations as $operation => $tailles) { ?>
-            <h4 class="text-warning">Nom opération: <?php echo $operation; ?></h4>
-            <?php foreach ($tailles as $taille => $totals) { ?>
-                <p>
-                    Taille: <?php echo $taille; ?><br>
-                    Finis1: <?php echo $totals['finis1']; ?><br>
-                    Finis2: <?php echo $totals['finis2']; ?><br>
-                    Retouches: <?php echo $totals['retouches']; ?><br>
-                </p>
-            <?php } ?>
+    <?php }else{ ?>    
+    <!-- Affichage des résultats si  avec plusieurs OF de meme reference -->
+        <?php foreach ($sums as $operation => $totals) { ?>
+            <p>
+                Nom opération: <?php echo $operation; ?><br>
+                Finis1: <?php echo $totals['finis1']; ?><br>
+                Finis2: <?php echo $totals['finis2']; ?><br>
+                Retouches: <?php echo $totals['retouches']; ?><br>
+                Couleurs: <?php echo implode('/ ', $totals['couleurs']); ?><br>
+                Tailles: <?php echo implode('/ ', $totals['tailles']); ?><br>
+            </p>
         <?php } ?>
     <?php } ?>
-
-
-         <!-- fin -->
-    <?php } ?>
-    <!-- ... reste du body -->
-     <footer class="bg-primary-gradient">
+<footer class="bg-primary-gradient">
 <div class="container py-4 py-lg-5">
     <div class="row justify-content-center">
         <div class="col-sm-4 col-md-3 text-center text-lg-start d-flex flex-column">
@@ -228,17 +210,3 @@ if ($var != 0) {
 <script src="../general/assets/js/Dark-Mode-Switch-darkmode.js"></script>
 </body>
 </html>
-
-      <!-- Affichage des résultats avec plusieurs OF -->
-        <!-- <?php foreach ($operation_values as $operation => $colors) { ?>
-            <?php foreach ($colors as $couleur => $totals) { ?>
-            <p>
-                Nom opération: <?php echo $operation; ?><br>
-                Couleur: <?php echo $couleur; ?><br>
-                Finis1: <?php echo $totals['finis1']; ?><br>
-                Finis2: <?php echo $totals['finis2']; ?><br>
-                Retouches: <?php echo $totals['retouches']; ?><br>
-                Tailles: <?php echo implode('/ ', $totals['tailles']); ?><br>
-            </p>
-            <?php } ?>
-        <?php } ?> -->
