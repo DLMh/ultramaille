@@ -2,6 +2,8 @@
   //Initialisation des variables
 
  include("../../admin/databases/db_sql_server.php");
+ include("../../admin/databases/db_to_mysql.php");
+ 
 
 // Vérification des paramètres GET
 if (isset($_GET['refcde'])) {
@@ -176,21 +178,63 @@ if ($var != 0) {
             </button>
         </a>
     </div>
+          <!-- zone d'utilisation mysql -->
+     <?php 
+        // Requête SQL
+        $sql = "SELECT desc_type,numcde,desc_ref,qte FROM `commande_mvt` WHERE idcom=".$RefCRM." and (desc_type='".$RefCde."' OR desc_ref='".$RefCde."')";
+        $result = mysqli_query($conn, $sql);
+        // Vérifier si des résultats ont été retournés
+     
+           // Tableau pour stocker les résultats
+$donnees = [];
+
+if (mysqli_num_rows($result) > 0) {
+    // Parcourir les résultats et stocker dans le tableau
+    while($row = mysqli_fetch_assoc($result)) {
+        $donnees[] = [
+            'desc_type' => $row["desc_type"],
+            'numcde'    => $row["numcde"],
+            'desc_ref'  => $row["desc_ref"],
+            'qte'       => $row["qte"]
+        ];
+    }
+        } else {
+            echo "0 résultats";
+        }
+
+        // Fermer la connexion
+        mysqli_close($conn);
+     ?>
+     <?php if (!empty($donnees)) {
+        $qtecde=0;
+        $desc_ref=0;$desc_type=0;$numcde=0;
+    foreach ($donnees as $donnee) {
+    
+         $desc_type=$donnee['desc_type'] ;
+         $numcde=$donnee['numcde'] ;
+         $desc_ref=$donnee['desc_ref'] ;
+         $qte=$donnee['qte'] ;
+        
+    }
+
+    echo "</table>";
+}?>
+     <!-- fin zone -->
     <!-- si une seule OF -->
     <?php if ($var == 0) { ?>
     <div class="container mt-5">
+    
         <h1 class="text-center">Suivi de production</h1>
         <h2 class="text-center">OF <?php echo $_GET['OF']?></h2>
 
         <div class="row mt-4">
             <div class="col-6">
                 <p><strong>Commande </strong> <?php echo $_GET['collection']?></p>
-                <p><strong>DESCRIPTION:</strong> CRM(commande_mvt:Desc_type)</p>
+                <p><strong>DESCRIPTION:</strong> <?php echo $desc_type ?? 'n/a' ;?></p>
             </div>
             <div class="col-6 text-end">
-                <p><strong>DATE:</strong> CRM(commande_mvt:DateCde)</p>
-                <p><strong>N° DE COMMANDE:</strong>   <?php echo $RefCRM ?> </p>
-                <p><strong>REFERENCE:</strong> <?php echo $RefCde ?></p>
+                <p><strong>N° DE COMMANDE:</strong>   <?php echo $numcde ?? 'n/a' ?> </p>
+                <p><strong>REFERENCE:</strong> <?php echo $RefCde ?> - <?php echo  $desc_ref?? 'n/a' ; ?> </p>
             </div>
         </div>         
             <?php
@@ -268,14 +312,46 @@ if ($var != 0) {
                                             </tr>
                                         <?php } ?>
                                     </tbody>
-                                    <tfoot>
+                                    <!-- <tfoot>
                                         <tr>
                                             <th colspan="1">Total</th>
                                             <th></th>
                                             <th colspan="2"></th>
                                             
                                         </tr>
-                                    </tfoot>
+                                    </tfoot> -->
+                                </table>
+                                 <h4 class="bg-secondary ">Quantité Commande: <?php echo $qte ?? 0 ;?>   </h4>
+                                <table class="table table-bordered  ">
+                                    <thead>
+                                        <tr> 
+                                           <th>Situation</th>
+                                           <?php foreach ($tailles as $taille => $values) { ?>
+                                                <th><?php echo $taille;  ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
+                                            <?php } ?>
+                                            <th>TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Qte Commande</td>
+                                             <?php $totalqte=0; ?>
+                                              <?php foreach ($tailles as $taille => $values) { ?>
+                                                    <td><?php echo $qte ??0 ; $totalqte+=$qte ??0 ;?></td> <!-- Valeur finis2 -->
+                                                <?php } ?>
+                                                <td><?php echo $totalqte;?></td>
+                                        </tr>
+                                        <tr>
+                                            <td>OK PROD</td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Reste à envoyé</td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                                 </div>
                             </div>
@@ -303,7 +379,7 @@ if ($var != 0) {
         }
     ?>
 
-    <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
+    <!-- <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
         <h3 class="text-info">Couleur: <?php echo $couleur; ?></h3>
         <?php foreach ($operations as $operation => $tailles) { ?>
             <h4 class="text-warning">Nom opération: <?php echo $operation; ?></h4>
@@ -316,38 +392,158 @@ if ($var != 0) {
                 </p>
             <?php } ?>
         <?php } ?>
-    <?php } ?>
+    <?php } ?> -->
 
+  <div class="container mt-5">
+  
+            <h1 class="text-center">Suivi de production</h1>
+            <h2 class="text-center">OF <?php echo $_GET['OF']?></h2>
 
-         <!-- fin -->
+            <div class="row mt-4">
+                <div class="col-6">
+                    <p><strong>Commande </strong> <?php echo $_GET['collection']?></p>
+                    <p><strong>DESCRIPTION:</strong> <?php echo $desc_type ?? 'n/a' ;?></p>
+                </div>
+                <div class="col-6 text-end">
+                    <p><strong>N° DE COMMANDE:</strong>   <?php echo $RefCRM ?> </p>
+                    <p><strong>REFERENCE:</strong> <?php echo $RefCde ?> - <?php echo $desc_ref ?? 'n/a' ;?></p>
+                </div>
+            </div>  
+            <!-- Détails des opérations -->
+                <div class="row">
+                    <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
+                        <div class="col-md-6 mb-4">
+                            <div class="card">
+                                <div class="card-header  text-blue">
+                                    <h5>Couleur: <?php echo $couleur; ?></h5>
+                                </div>
+                                <div class="card-body">
+                              
+                                  
+                                    <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Opération</th> <!-- Colonne pour les noms d'opérations -->
+                                            <?php foreach ($tailles as $taille => $values) { ?>
+                                                <th><?php echo $taille; ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
+                                            <?php } ?>
+                                            <th>TOTAL</th> <!-- Colonne pour le total -->
+                                            <th>En cours</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Affichage des données par opération -->
+                                        <?php foreach ($operations as $operation => $tailles) { ?>
+                                            <!-- Première ligne pour l'opération -->
+                                            <tr>
+                                                <?php $Total=0 ?>
+                                                <td class="bg-info"><?php echo $operation; ?></td> <!-- Affiche le nom de l'opération -->
+                                                <?php foreach ($tailles as $taille => $values) { ?>
+                                                    <td>1er: <?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
+                                                <?php } ?>
+                                                <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
+                                                <td></td>
+                                            </tr>
+                                            
+                                            <!-- Ligne suivante pour le second choix (finis2) -->
+                                            <tr>
+                                                <?php $somme=0 ?>
+                                                <td></td> <!-- Cellule vide sous l'opération -->
+                                                <?php foreach ($tailles as $taille => $values) { ?>
+                                                    <td>2eme : <?php echo $values['finis2'] ?? 'n/a';$somme+=$values['finis2'] ?></td> <!-- Valeur finis2 -->
+                                                <?php } ?>
+                                                <td><?php echo $somme?></td> <!-- Colonne vide pour le total -->
+                                                <td></td>
+                                            </tr>
+                                            
+                                            <!-- Ligne suivante pour les retouches -->
+                                            <tr>
+                                                <td></td> <!-- Cellule vide sous l'opération -->
+                                                <?php $total=0 ?>
+                                                <?php foreach ($tailles as $taille => $values) { ?>
+                                                    <td>RT : <?php echo $values['retouches'] ?? 'n/a';$total+=$values['retouches'] ?></td> <!-- Valeur retouches -->
+                                                <?php } ?>
+                                                <td> <?php echo $total ?></td> <!-- Colonne vide pour le total -->
+                                                <td></td>
+                                            </tr>
+                                        <?php } ?>
+                                    </tbody>
+                                    <!-- <tfoot>
+                                        <tr>
+                                            <th colspan="1">Total</th>
+                                            <th></th>
+                                            <th colspan="2"></th>
+                                            
+                                        </tr>
+                                    </tfoot> -->
+                                </table>
+                                    <h4 class="bg-secondary ">Quantité Commande: <?php echo $qte ?? 0 ;?>   </h4>
+                                <table class="table table-bordered  ">
+                                    <thead>
+                                        <tr> 
+                                           <th>Situation</th>
+                                           <?php foreach ($tailles as $taille => $values) { ?>
+                                                <th><?php echo $taille;  ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
+                                            <?php } ?>
+                                            <th>TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Qte Commande</td>
+                                             <?php $totalqte=0; ?>
+                                              <?php foreach ($tailles as $taille => $values) { ?>
+                                                    <td><?php echo $qte ?? 0 ; $totalqte+=$qte ?? 0 ;?></td> <!-- Valeur finis2 -->
+                                                <?php } ?>
+                                                <td><?php echo $totalqte;?></td>
+                                        </tr>
+                                        <tr>
+                                            <td>OK PROD</td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Reste à envoyé</td>
+                                            <td></td>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
+                        </div>
+                    <?php } ?>
+                    
+                </div>
+            </div>
     <?php } ?>
     <!-- ... reste du body -->
   
-     <footer class="bg-primary-gradient">
-<div class="container py-4 py-lg-5">
-    <div class="row justify-content-center">
-        <div class="col-sm-4 col-md-3 text-center text-lg-start d-flex flex-column">
-            <h3 class="fs-6 fw-bold">A propos</h3>
-            <ul class="list-unstyled">
-                <li><a href="#">Entreprise</a></li>
-                <li><a href="#">Equipes</a></li>
-                <li><a href="#"><span style="color: rgb(94, 87, 87); background-color: rgba(48, 49, 52, 0);">Héritage</span><br><br></a></li>
+<footer class="bg-primary-gradient">
+    <div class="container py-4 py-lg-5">
+        <div class="row justify-content-center">
+            <div class="col-sm-4 col-md-3 text-center text-lg-start d-flex flex-column">
+                <h3 class="fs-6 fw-bold">A propos</h3>
+                <ul class="list-unstyled">
+                    <li><a href="#">Entreprise</a></li>
+                    <li><a href="#">Equipes</a></li>
+                    <li><a href="#"><span style="color: rgb(94, 87, 87); background-color: rgba(48, 49, 52, 0);">Héritage</span><br><br></a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 text-center text-lg-start d-flex flex-column align-items-center order-first align-items-lg-start order-lg-last"><img src="../general/assets/img/Logo-Ultramaille-1.png" style="height: 53px;">
+                <p class="text-muted"><span style="color: rgb(0, 0, 0);">Spécialistes de la maille depuis 20 ans, nous sommes des tricoteurs situé à Antananarivo à Madagascar.</span></p>
+            </div>
+        </div>
+        <hr>
+        <div class="text-muted d-flex justify-content-between align-items-center pt-3">
+            <p class="mb-0">Copyright © 2023 Ultramaille</p>
+            <ul class="list-inline mb-0">
+                <li class="list-inline-item"></li>
+                <li class="list-inline-item"></li>
+                <li class="list-inline-item"></li>
             </ul>
         </div>
-        <div class="col-lg-3 text-center text-lg-start d-flex flex-column align-items-center order-first align-items-lg-start order-lg-last"><img src="../general/assets/img/Logo-Ultramaille-1.png" style="height: 53px;">
-            <p class="text-muted"><span style="color: rgb(0, 0, 0);">Spécialistes de la maille depuis 20 ans, nous sommes des tricoteurs situé à Antananarivo à Madagascar.</span></p>
-        </div>
     </div>
-    <hr>
-    <div class="text-muted d-flex justify-content-between align-items-center pt-3">
-        <p class="mb-0">Copyright © 2023 Ultramaille</p>
-        <ul class="list-inline mb-0">
-            <li class="list-inline-item"></li>
-            <li class="list-inline-item"></li>
-            <li class="list-inline-item"></li>
-        </ul>
-    </div>
-</div>
 </footer>
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>

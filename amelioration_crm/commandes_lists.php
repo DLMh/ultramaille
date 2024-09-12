@@ -87,7 +87,7 @@
                         <td><?php  echo $row['RefCRM']; ?></td>
                         <td>...</td>
                         <td>
-                            <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>">
+                            <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>&&collection=<?php echo $row['NomCollect'] ?>">
                                 <button class="btn btn-info">Suivi</button>
                             </a>
                         </td>
