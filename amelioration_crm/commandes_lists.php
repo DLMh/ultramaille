@@ -82,8 +82,8 @@
                 <?php  while ($row = sqlsrv_fetch_array($res, SQLSRV_FETCH_ASSOC)) { ?>
                     <tr>
                         <td><?php  echo $row['NumOF']; ?></td>
-                        <td><?php echo htmlspecialchars(mb_convert_encoding($row['NomCollect'], 'UTF-8', 'auto'), ENT_QUOTES, 'UTF-8'); ?></td>
-                        <td><?php   echo $row['RefCde']; ?></td>
+                        <td><?php echo mb_convert_encoding($row['NomCollect'], 'UTF-8', 'auto'); ?></td>
+                        <td><?php   echo mb_convert_encoding($row['RefCde'], 'UTF-8', 'ISO-8859-1') ; ?></td>
                         <td><?php  echo $row['RefCRM']; ?></td>
                         <td>...</td>
                         <td>
