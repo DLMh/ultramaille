@@ -184,7 +184,7 @@ if ($var != 0) {
 $totalqte=0;
 $totalokprod=0;
 if($RefCRM!='VIDE'){
-$sql = "SELECT desc_type,numcde,desc_ref,qte,desc_taille,ok_prod FROM `commande_mvt` WHERE idcom=".$RefCRM." and (desc_type='".$RefCde."' OR desc_ref='".$RefCde."')";
+    $sql = "SELECT desc_type,numcde,desc_ref,qte,desc_taille,ok_prod,idcomdet,desc_coul FROM `commande_mvt` WHERE idcom=".$RefCRM." and (desc_type='".$RefCde."' OR desc_ref='".$RefCde."')";
 $result = mysqli_query($conn, $sql);
 
 // Vérifier si des résultats ont été retournés
@@ -202,7 +202,10 @@ if (mysqli_num_rows($result) > 0) {
             'desc_ref'  => $row["desc_ref"],
             'desc_taille' => $row["desc_taille"],
             'ok_prod' => $row["ok_prod"],
-            'qte'       => $row["qte"]
+            'idcomdet'=> $row["idcomdet"],
+            'qte'       => $row["qte"],
+            'desc_coul'       => $row["desc_coul"]
+
         ];
     }
         } else {
@@ -213,7 +216,8 @@ if (mysqli_num_rows($result) > 0) {
         mysqli_close($conn);
      ?>
      <?php if (!empty($donnees)) {
-        $qte=0;$desc_ref=0;$desc_type=0;$numcde=0;$quantitesParTaille = array();$okprodParTaille= array();
+        $qte=0;$desc_ref=0;$desc_type=0;$numcde=0;$quantitesParTaille = array();$okprodParTaille= array();$idcomdet=0;$idcomdetParTaille= array();$idcomdetParCouleur= array();
+        
     foreach ($donnees as $donnee) {
          $desc_type=$donnee['desc_type'] ;
          $numcde=$donnee['numcde'] ;
@@ -221,15 +225,27 @@ if (mysqli_num_rows($result) > 0) {
          $desc_taille=$donnee['desc_taille'];
          $okprod=$donnee['ok_prod'];
          $qte=$donnee['qte'] ;
+         $idcomdet=$donnee['idcomdet'];
+         $desc_coul = $donnee['desc_coul']; 
         // Vérifier si la taille est déjà dans le tableau
         if (!isset($quantitesParTaille[$desc_taille])) {
             $quantitesParTaille[$desc_taille] = 0; // Initialiser la quantité pour cette taille
+        }
+         if (!isset($okprodParTaille[$desc_taille])) {
+            $okprodParTaille[$desc_taille] = 0; // Initialiser l'ok prod pour cette taille
+        }
+        if(!isset($idcomdetParTaille[$desc_taille][$desc_coul])){
+            $idcomdetParTaille[$desc_taille][$desc_coul] = 0;
         }
 
         // Ajouter la quantité à la taille correspondante
         $quantitesParTaille[$desc_taille] = (int)$qte;
         $okprodParTaille[$desc_taille] = (int)$okprod;
+
+        $idcomdetParTaille[$desc_taille][$desc_coul]=(int)$idcomdet;
+
     }
+
     foreach ($quantitesParTaille as $taille => $qte) { 
          $totalqte+=$qte;
     } 
@@ -237,7 +253,47 @@ if (mysqli_num_rows($result) > 0) {
          $totalokprod+=$ok;
     } 
 }
-}?>
+}
+?>
+<?php
+    if(!empty($donnees))
+    {
+        $dataByCouleur = [];
+
+        foreach ($donnees as $donnee) {
+            $desc_type = $donnee['desc_type'];
+            $numcde = $donnee['numcde'];
+            $desc_ref = $donnee['desc_ref'];
+            $desc_taille = $donnee['desc_taille'];
+            $okprod = $donnee['ok_prod'];
+            $qte = $donnee['qte'];
+            $idcomdet = $donnee['idcomdet'];
+            $desc_coul = $donnee['desc_coul'];
+
+            // Vérifier si la couleur est déjà dans le tableau
+            if (!isset($dataByCouleur[$desc_coul])) {
+                $dataByCouleur[$desc_coul] = []; // Initialiser la couleur
+            }
+
+            // Vérifier si la taille est déjà dans la couleur
+            if (!isset($dataByCouleur[$desc_coul][$desc_taille])) {
+                $dataByCouleur[$desc_coul][$desc_taille] = []; // Initialiser la taille pour la couleur
+            }
+
+            // Vérifier si l'idcomdet est déjà dans la taille
+            if (!isset($dataByCouleur[$desc_coul][$desc_taille][$idcomdet])) {
+                $dataByCouleur[$desc_coul][$desc_taille][$idcomdet] = [
+                    'qte' => 0,
+                    'okprod' => 0
+                ]; // Initialiser l'idcomdet
+            }
+
+            // Ajouter les informations pour cette couleur, taille et idcomdet
+            $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['qte'] = (int)$qte;
+            $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['okprod'] = (int)$okprod;
+        }
+    }
+?>
      <!-- fin zone -->
     <!-- si une seule OF -->
     <?php if ($var == 0) { ?>
@@ -248,12 +304,14 @@ if (mysqli_num_rows($result) > 0) {
 
         <div class="row mt-4">
             <div class="col-6">
-                <p><strong>Commande </strong> <?php echo htmlspecialchars($_GET['collection'], ENT_QUOTES, 'UTF-8'); ?></p>
+     
+                <?php $collection= mb_convert_encoding($_GET['collection'], 'ISO-8859-1', 'UTF-8');?>
+                <p><strong>Commande </strong> <?php  echo htmlspecialchars($collection, ENT_QUOTES, 'UTF-8');?></p>
                 <p><strong>DESCRIPTION:</strong> <?php echo $desc_type ?? 'n/a' ;?></p>
             </div>
             <div class="col-6 text-end">
                 <p><strong>N° DE COMMANDE:</strong>   <?php echo $numcde ?? 'n/a' ?> </p>
-                <p><strong>REFERENCE:</strong> <?php echo mb_convert_encoding($RefCde, 'UTF-8', 'ISO-8859-1')  ?> - <?php echo  $desc_ref?? 'n/a' ; ?> </p>
+                <p><strong>REFERENCE:</strong> <?php echo mb_convert_encoding($RefCde, 'UTF-8', 'ISO-8859-1')  ?> - <?php echo  $desc_ref ?? 'n/a' ; ?> </p>
             </div>
         </div>         
             <?php
@@ -271,7 +329,11 @@ if (mysqli_num_rows($result) > 0) {
         ?>
             <div class="container mt-4">
                 <h1 class="text-center mb-4">Détails des Opérations</h1>
-                
+                <form id="toggle-operations-form">
+                    <?php foreach ($singleOFValues as $nom_operation => $values) {?>
+                    <label><input type="checkbox" class="operation-toggle" value="<?php echo $nom_operation ?>" checked> <?php echo $nom_operation ?></label>
+                    <?php }?>
+                </form>
                 <!-- Détails des opérations -->
                 <div class="row">
                     <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
@@ -281,267 +343,294 @@ if (mysqli_num_rows($result) > 0) {
                                     <h5>Couleur: <?php echo $couleur; ?></h5>
                                 </div>
                                 <div class="card-body">
-                              
-                                  
                                     <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Opération</th> <!-- Colonne pour les noms d'opérations -->
-                                            <?php foreach ($tailles as $taille => $values) { ?>
-                                                <th><?php echo $taille; ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
-                                            <?php } ?>
-                                            <th>TOTAL</th> <!-- Colonne pour le total -->
-                                            <th>EN COURS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;?>
-                                        <!-- Affichage des données par opération -->
-                                        <?php foreach ($operations as $operation => $tailles) { ?>
-                                            
-                                            <!-- Première ligne pour l'opération -->
-                                            <tr>
-                                                <?php $Total=0 ?>
-                                                <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1'); ?></td>
-                                                <!-- Affiche le nom de l'opération -->
-                                                <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
-                                                <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td> <?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
-                                                <?php } ?>
-                                                <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
-                                                <td> 
-                                                    <?php 
-                                                      
-                                                        // Exemple de calcul en fonction de l'opération
-                                                        if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
-                                                            if(isset($qte)){
-                                                                $tricoter=$Total;
-                                                                $encours = $Total - $totalqte;
-                                                            }
-                                                            else{
-                                                                $encours = $Total;
-                                                            }
-                                                            
-                                                        } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
-                                                            $totalMending=$Total;
-                                                            $encours = $tricoter - $Total; // Un autre calcul
+                                            <thead>
+                                                <tr>
+                                                    <th>Opération</th> <!-- Colonne pour les noms d'opérations -->
+                                                    <?php foreach ($tailles as $taille => $values) { ?>
+                                                        <th><?php echo $taille; ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
+                                                    <?php } ?>
+                                                    <th>TOTAL</th> <!-- Colonne pour le total -->
+                                                    <th>EN COURS</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;?>
+                                                <!-- Affichage des données par opération -->
+                                                <?php foreach ($operations as $operation => $tailles) { ?>
                                                     
-                                                        }
-                                                        elseif ($operation == 'Lavage') {
-                                                            $totalLavage = $Total;
-                                                              $encours = $totalLavage - $totalMending; 
-                                                        }
-                                                        
-                                                        elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
-                                                            $totalPose=$Total;
-                                                              $encours = $Total - $totalLavage; 
-                                                        }
-                                                        elseif ($op== 'Qc mending') {
-                                                            $totalQC=$Total;
-                                                              $encours = $Total - $totalPose; 
-                                                        }
-
-                                                        elseif ($op== 'Entrée Packing') {
-                                                              $encours = $Total - $totalQC; 
-                                                        }
-                                                        else {
-                                                            $encours = 0;
-                                                        }
-
-                                                        echo $encours;
-                                                    ?>
-                                                </td>
-                                            </tr>
-                                            
-                                            <!-- Ligne suivante pour le second choix (finis2) -->
-                                            <tr>
-                                                <?php $somme=0 ?>
-                                                <td>2eme Choix</td> <!-- Cellule vide sous l'opération -->
-                                                <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td><?php echo $values['finis2'] ?? 'n/a';$somme+=$values['finis2'] ?></td> <!-- Valeur finis2 -->
-                                                <?php } ?>
-                                                <td><?php echo $somme?></td> <!-- Colonne vide pour le total -->
-                                                <td>
-                                                      <?php 
-                                                        $totalM=0;$totalLav=0;$tP=0;$TQC=0;$tricot=0;
-                                                        // Exemple de calcul en fonction de l'opération
-                                                        if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
-                                                            if(isset($qte)){
-                                                                $tricot=$somme;
-                                                                $encours = $somme - $totalqte;
-                                                            }
-                                                            else{
-                                                                $encours = $somme;
-                                                            }
+                                                    <!-- Première ligne pour l'opération -->
+                                                    <tr class="operation-row" data-operation="<?php echo $operation; ?>">
+                                                        <?php $Total=0 ?>
+                                                        <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1'); ?></td>
+                                                        <!-- Affiche le nom de l'opération -->
+                                                        <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
+                                                        <?php foreach ($tailles as $taille => $values) { ?>
+                                                            <td> <?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
+                                                        <?php } ?>
+                                                        <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
+                                                        <td> 
+                                                            <?php 
                                                             
-                                                        } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
-                                                            $totalM=$somme;
-                                                            $encours = $tricot - $somme; // Un autre calcul
-                                                    
-                                                        }
-                                                        elseif ($operation == 'Lavage') {
-                                                            $totalLav = $somme;
-                                                              $encours = $totalLav - $totalM; 
-                                                        }
-                                                        
-                                                        elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
-                                                            $tP=$somme;
-                                                              $encours = $somme - $totalLav; 
-                                                        }
-                                                        elseif ($op== 'Qc mending') {
-                                                            $TQC=$somme;
-                                                              $encours = $somme - $tP; 
-                                                        }
-
-                                                        elseif ($op== 'Entrée Packing') {
-                                                              $encours = $somme - $TQC; 
-                                                        }
-                                                        else {
-                                                            $encours = 0;
-                                                        }
-
-                                                        echo $encours;
-                                                    ?>
-                                                </td>
-                                            </tr>
-                                            
-                                            <!-- Ligne suivante pour les retouches -->
-                                            <tr>
-                                                <td>Retouches</td> <!-- Cellule vide sous l'opération -->
-                                                <?php $total=0 ?>
-                                                <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td><?php echo $values['retouches'] ?? 'n/a';$total+=$values['retouches'] ?></td> <!-- Valeur retouches -->
-                                                <?php } ?>
-                                                <td> <?php echo $total ?></td> <!-- Colonne vide pour le total -->
-                                                <td><?php 
-                                                        $RM=0;$Lav=0;$P=0;$QC=0;$tri=0;
-                                                        // Exemple de calcul en fonction de l'opération
-                                                        if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
-                                                            if(isset($qte)){
-                                                                $tri=$total;
-                                                                $encours = $total - $totalqte;
-                                                            }
-                                                            else{
-                                                                $encours = $total;
-                                                            }
+                                                                // Exemple de calcul en fonction de l'opération
+                                                                if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
+                                                                    if(isset($qte)){
+                                                                        $tricoter=$Total;
+                                                                        $encours = $Total - $totalqte;
+                                                                    }
+                                                                    else{
+                                                                        $encours = $Total;
+                                                                    }
+                                                                    
+                                                                } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
+                                                                    $totalMending=$Total;
+                                                                    $encours = $tricoter - $Total; // Un autre calcul
                                                             
-                                                        } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
-                                                            $RM=$total;
-                                                            $encours = $tri - $total; // Un autre calcul
+                                                                }
+                                                                elseif ($operation == 'Lavage') {
+                                                                    $totalLavage = $Total;
+                                                                    $encours = $totalLavage - $totalMending; 
+                                                                }
+                                                                
+                                                                elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
+                                                                    $totalPose=$Total;
+                                                                    $encours = $Total - $totalLavage; 
+                                                                }
+                                                                elseif ($op== 'Qc mending') {
+                                                                    $totalQC=$Total;
+                                                                    $encours = $Total - $totalPose; 
+                                                                }
+
+                                                                elseif ($op== 'Entrée Packing') {
+                                                                    $encours = $Total - $totalQC; 
+                                                                }
+                                                                else {
+                                                                    $encours = 0;
+                                                                }
+
+                                                                echo $encours;
+                                                            ?>
+                                                        </td>
+                                                    </tr>
                                                     
-                                                        }
-                                                        elseif ($operation == 'Lavage') {
-                                                            $Lav = $total;
-                                                              $encours = $Lav - $RM; 
-                                                        }
-                                                        
-                                                        elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
-                                                            $P=$total;
-                                                              $encours = $total - $Lav; 
-                                                        }
-                                                        elseif ($op== 'Qc mending') {
-                                                            $QC=$total;
-                                                              $encours = $total - $P; 
-                                                        }
+                                                    <!-- Ligne suivante pour le second choix (finis2) -->
+                                                    <tr class="operation-row" data-operation="<?php echo $operation; ?>">
+                                                        <?php $somme=0 ?>
+                                                        <td>2eme Choix</td> <!-- Cellule vide sous l'opération -->
+                                                        <?php foreach ($tailles as $taille => $values) { ?>
+                                                            <td><?php echo $values['finis2'] ?? '';$somme+=$values['finis2'] ?></td> <!-- Valeur finis2 -->
+                                                        <?php } ?>
+                                                        <td><?php echo $somme?></td> <!-- Colonne vide pour le total -->
+                                                        <td>
+                                                            <?php 
+                                                                $totalM=0;$totalLav=0;$tP=0;$TQC=0;$tricot=0;
+                                                                // Exemple de calcul en fonction de l'opération
+                                                                if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
+                                                                    if(isset($qte)){
+                                                                        $tricot=$somme;
+                                                                        $encours = $somme - $totalqte;
+                                                                    }
+                                                                    else{
+                                                                        $encours = $somme;
+                                                                    }
+                                                                    
+                                                                } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
+                                                                    $totalM=$somme;
+                                                                    $encours = $tricot - $somme; // Un autre calcul
+                                                            
+                                                                }
+                                                                elseif ($operation == 'Lavage') {
+                                                                    $totalLav = $somme;
+                                                                    $encours = $totalLav - $totalM; 
+                                                                }
+                                                                
+                                                                elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
+                                                                    $tP=$somme;
+                                                                    $encours = $somme - $totalLav; 
+                                                                }
+                                                                elseif ($op== 'Qc mending') {
+                                                                    $TQC=$somme;
+                                                                    $encours = $somme - $tP; 
+                                                                }
 
-                                                        elseif ($op== 'Entrée Packing') {
-                                                              $encours = $total - $QC; 
-                                                        }
-                                                        else {
-                                                            $encours = 0;
-                                                        }
+                                                                elseif ($op== 'Entrée Packing') {
+                                                                    $encours = $somme - $TQC; 
+                                                                }
+                                                                else {
+                                                                    $encours = 0;
+                                                                }
 
-                                                        echo $encours;
-                                                    ?>
-                                                    </td>
-                                            </tr>
-                                        <?php } ?>
-                                    </tbody>
-                                    <!-- <tfoot>
-                                        <tr>
-                                            <th colspan="1">Total</th>
-                                            <th></th>
-                                            <th colspan="2"></th>
-                                            
-                                        </tr>
-                                    </tfoot> -->
-                                </table>
-                                
-                                <table class="table table-bordered  ">
-                                    <thead>
-                                        <tr> 
-                                           <th>Situation</th>
-                                           <?php  if(isset($quantitesParTaille)){?>
-                                                <?php foreach ($quantitesParTaille as $taille => $quantite) { ?>
-                                                    <th><?php echo $taille;  ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
+                                                                echo $encours;
+                                                            ?>
+                                                        </td>
+                                                    </tr>
+                                                    
+                                                    <!-- Ligne suivante pour les retouches -->
+                                                    <tr class="operation-row" data-operation="<?php echo $operation; ?>">
+                                                        <td>Retouches</td> <!-- Cellule vide sous l'opération -->
+                                                        <?php $total=0 ?>
+                                                        <?php foreach ($tailles as $taille => $values) { ?>
+                                                            <td><?php echo $values['retouches'] ?? '';$total+=$values['retouches'] ?></td> <!-- Valeur retouches -->
+                                                        <?php } ?>
+                                                        <td> <?php echo $total ?></td> <!-- Colonne vide pour le total -->
+                                                        <td><?php 
+                                                                $RM=0;$Lav=0;$P=0;$QC=0;$tri=0;
+                                                                // Exemple de calcul en fonction de l'opération
+                                                                if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
+                                                                    if(isset($qte)){
+                                                                        $tri=$total;
+                                                                        $encours = $total - $totalqte;
+                                                                    }
+                                                                    else{
+                                                                        $encours = $total;
+                                                                    }
+                                                                    
+                                                                } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
+                                                                    $RM=$total;
+                                                                    $encours = $tri - $total; // Un autre calcul
+                                                            
+                                                                }
+                                                                elseif ($operation == 'Lavage') {
+                                                                    $Lav = $total;
+                                                                    $encours = $Lav - $RM; 
+                                                                }
+                                                                
+                                                                elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
+                                                                    $P=$total;
+                                                                    $encours = $total - $Lav; 
+                                                                }
+                                                                elseif ($op== 'Qc mending') {
+                                                                    $QC=$total;
+                                                                    $encours = $total - $P; 
+                                                                }
+
+                                                                elseif ($op== 'Entrée Packing') {
+                                                                    $encours = $total - $QC; 
+                                                                }
+                                                                else {
+                                                                    $encours = 0;
+                                                                }
+
+                                                                echo $encours;
+                                                            ?>
+                                                            </td>
+                                                    </tr>
                                                 <?php } ?>
-                                            <?php }else{?>
-                                            
-                                            <?php } ?>
-                                            <th>TOTAL</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Qte Commande</td>
-                                             <?php  if(isset($quantitesParTaille)){?>
-                                                <?php foreach ($quantitesParTaille as $taille => $qte) { ?>
-                                                    <td><?php echo $qte ?? 0 ;?></td> 
-                                                <?php } ?>
-                                                 <td><?php echo $totalqte;?></td>
-                                             <?php }else{?>
-                                             
-                                            <?php } ?>
-                                               
-                                        </tr>
-                                        <tr>
-                                            <td>OK PROD(<?php echo $couleur?>)</td>
-                                            <?php  if(isset($okprodParTaille)){?>
-                                             <?php foreach ($okprodParTaille as $taille => $values) { ?>
-                                                    <td><?php echo $values; ?></td> 
-                                            <?php } ?>
-                                            <?php }else{?>
-                                             
-                                            <?php } ?>
-                                            <td><?php echo $totalokprod ;?></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Reste à envoyé</td>
-                                           
-                                            <?php if (isset($quantitesParTaille) && isset($okprodParTaille)) { ?>
-                                                <?php foreach ($quantitesParTaille as $taille => $qte) { ?>
-                                                    <td>
-                                                        <?php 
-                                                            // Calcule la différence entre $qte et $values (par taille)
-                                                            $values = $okprodParTaille[$taille] ?? 0;
-                                                            $difference = $qte - $values;
-                                                            echo $difference;
-                                                        ?>
-                                                    </td>
-                                                <?php } ?>
-                                                <td><?php echo $totalqte - $totalokprod; ?></td> <!-- Différence totale -->
-                                            <?php } ?>
-                                        </tr>
-                                           <tr>
-                                            <td>Difference</td>
-                                             <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td></td> 
-                                            <?php } ?>
-                                            <td></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Pourcentage</td>
-                                             <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td></td> 
-                                            <?php } ?>
-                                            <td></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                            </tbody>
+                                    </table>
+                                    
+                                    
                                 </div>
                             </div>
                         </div>
                     <?php } ?>
+
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-4">   
+                        <div class="card">   
+                            <div class="card-body">
+                                <?php  $resteenvoie=0;?>
+                            <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th style="text-align: center;" colspan="<?php echo count($tailles) * 2 + 2; ?>">Date</th>
+                                        </tr>
+                                        <tr>
+                                            <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
+                                        </tr>
+                                        <tr>
+                                            <th>Situation</th>
+                                            
+                                            <!-- Afficher les colonnes de taille et idcomdet pour chaque taille -->
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <th  style="text-align: center;"><?php echo $taille; ?></th> <!-- Affiche la taille -->
+                                            <?php endforeach; ?>
+                                            <th>TOTAL</th>
+                                        </tr>
+                                       
+                                    </thead>
+                                    <tbody>
+                                        <!-- Ligne pour Qte Commande -->
+                                        <tr>
+                                            <td>Qte Commande</td>
+                                            <?php $totalQte = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <td><?php echo $details['qte']; ?></td>
+                                                    <?php $totalQte += $details['qte']; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td><?php echo $totalQte; ?></td>
+                                        </tr>
+
+                                        <!-- Ligne pour OK PROD -->
+                                        <tr>
+                                            <td>OK CHIP</td>
+                                            
+                                            <?php $totalOkProd = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <td>
+                                                    <input 
+                                                        type="number" 
+                                                        value="<?php echo $details['okprod']; ?>" 
+                                                        data-idcomdet="<?php echo $idcomdet; ?>"  
+                                                        onchange="updateOkProd(this)" 
+                                                    />
+                                                    </td>
+                                                    <?php $totalOkProd += $details['okprod']; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td><?php echo $totalOkProd; ?></td>
+                                        </tr>
+
+                                        <!-- Ligne pour Reste à envoyer -->
+                                        <tr>
+                                            <td>Reste à envoyer</td>
+                                            <?php $resteTotal = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php $reste = $details['qte'] - $details['okprod']; ?>
+                                                    <td><?php echo $reste; ?></td>
+                                                    <?php $resteTotal += $reste; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td><?php $resteenvoie=$resteTotal;echo $resteTotal; ?></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Différence</td>
+                                            <?php $differenceTotal = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php $difference = ($details['qte'] - $details['okprod']) - $details['qte']; ?>
+                                                    <td><?php echo $difference; ?></td>
+                                                    <?php $differenceTotal += $difference; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
+                                        </tr>
+                                        <tr>
+                                            <td>Pourcentage</td>
+                                            <?php $resteTotal = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php $pourcentage = (($details['qte'] - $details['okprod'])/$details['qte'])*100; ?>
+                                                    <td><?php echo $pourcentage; ?>%</td>
+                                                    
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            <?php endforeach; ?>
+
+
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- fin -->
@@ -594,8 +683,14 @@ if (mysqli_num_rows($result) > 0) {
                     <p><strong>REFERENCE:</strong> <?php echo $RefCde ?> - <?php echo $desc_ref ?? 'n/a' ;?></p>
                 </div>
             </div>  
+
             <!-- Détails des opérations -->
                 <div class="row">
+                    <form id="toggle-operations-form">
+                    <?php foreach ($operation_values as $nom_operation => $values) {?>
+                    <label><input type="checkbox" class="operation-toggle" value="<?php echo $nom_operation ?>" checked> <?php echo $nom_operation ?></label>
+                    <?php }?>
+                </form>
                     <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
                         <div class="col-md-6 mb-4">
                             <div class="card">
@@ -603,244 +698,288 @@ if (mysqli_num_rows($result) > 0) {
                                     <h5>Couleur: <?php echo $couleur; ?></h5>
                                 </div>
                                 <div class="card-body">
-                              
-                                  
                                     <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th>Opération</th> <!-- Colonne pour les noms d'opérations -->
-                                            <?php foreach ($tailles as $taille => $values) { ?>
-                                                <th><?php echo $taille; ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
-                                            <?php } ?>
-                                            <th>TOTAL</th> <!-- Colonne pour le total -->
-                                            <th>En cours</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;?>
-                                        <!-- Affichage des données par opération -->
-                                        <?php foreach ($operations as $operation => $tailles) { ?>
-                                            <!-- Première ligne pour l'opération -->
+                                        <thead>
                                             <tr>
-                                                <?php $Total=0 ?>
-                                                <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1'); ?></td> <!-- Affiche le nom de l'opération -->
-                                                <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
+                                                <th>Opération</th> <!-- Colonne pour les noms d'opérations -->
                                                 <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td><?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
+                                                    <th><?php echo $taille; ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
                                                 <?php } ?>
-                                                <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
-                                                <td>  <?php 
-                                                     
-                                                        // Exemple de calcul en fonction de l'opération
-                                                        if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
-                                                           
-                                                            if(isset($qte)){
-                                                                $tricoter=$Total;
-                                                                $encours = $Total - $totalqte;
-                                                            }else{
-                                                                $encours = $Total -0;
+                                                <th>TOTAL</th> <!-- Colonne pour le total -->
+                                                <th>En cours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;?>
+                                            <!-- Affichage des données par opération -->
+                                            <?php foreach ($operations as $operation => $tailles) { ?>
+                                                
+                                                <!-- Première ligne pour l'opération -->
+                                                <tr class="operation-row" data-operation="<?php echo $operation; ?>" >
+                                                    <?php $Total=0 ?>
+                                                    <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1'); ?></td> <!-- Affiche le nom de l'opération -->
+                                                    <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
+                                                    <?php foreach ($tailles as $taille => $values) { ?>
+                                                        <td><?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
+                                                    <?php } ?>
+                                                    <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
+                                                    <td>  <?php 
+                                                        
+                                                            // Exemple de calcul en fonction de l'opération
+                                                            if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
+                                                            
+                                                                if(isset($qte)){
+                                                                    $tricoter=$Total;
+                                                                    $encours = $Total - $totalqte;
+                                                                }else{
+                                                                    $encours = $Total -0;
+                                                                }
+                                                                
+                                                            } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
+                                                                $totalMending=$Total;
+                                                                $encours = $tricoter - $Total; // Un autre calcul
+                                                        
+                                                            }
+                                                            elseif ($operation == 'Lavage') {
+                                                                $totalLavage = $Total;
+                                                                $encours = $totalLavage - $totalMending; 
                                                             }
                                                             
-                                                        } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
-                                                            $totalMending=$Total;
-                                                            $encours = $tricoter - $Total; // Un autre calcul
-                                                    
-                                                        }
-                                                        elseif ($operation == 'Lavage') {
-                                                            $totalLavage = $Total;
-                                                              $encours = $totalLavage - $totalMending; 
-                                                        }
-                                                        
-                                                        elseif ($operation == 'POSE ETIQUETTE' || $operation == 'Petit_main') {
-                                                            $totalPose=$Total;
-                                                              $encours = $Total - $totalLavage; 
-                                                        }
-                                                        elseif ($op== 'Qc mending') {
-                                                            $totalQC=$Total;
-                                                              $encours = $Total - $totalPose; 
-                                                        }
-
-                                                        elseif ($op== 'Entrée Packing') {
-                                                              $encours = $Total - $totalQC; 
-                                                        }
-                                                        else {
-                                                            $encours = 0;
-                                                        }
-
-                                                        echo $encours;
-                                                    ?>
-                                                    </td>
-                                            </tr>
-                                            
-                                            <!-- Ligne suivante pour le second choix (finis2) -->
-                                            <tr>
-                                                <?php $somme=0 ?>
-                                                <td>Second choix</td> <!-- Cellule vide sous l'opération -->
-                                                <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td><?php echo $values['finis2'] ?? 'n/a';$somme+=$values['finis2'] ?></td> <!-- Valeur finis2 -->
-                                                <?php } ?>
-                                                <td><?php echo $somme?></td> <!-- Colonne vide pour le total -->
-                                                <td><?php 
-                                                        $totalM=0;$totalLav=0;$tP=0;$TQC=0;$tricot=0;
-                                                        // Exemple de calcul en fonction de l'opération
-                                                        if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
-                                                            if(isset($qte)){
-                                                                $tricot=$somme;
-                                                                $encours = $somme - $totalqte;
+                                                            elseif ($operation == 'POSE ETIQUETTE' || $operation == 'Petit_main') {
+                                                                $totalPose=$Total;
+                                                                $encours = $Total - $totalLavage; 
                                                             }
-                                                            else{
-                                                                $encours = $somme;
+                                                            elseif ($op== 'Qc mending') {
+                                                                $totalQC=$Total;
+                                                                $encours = $Total - $totalPose; 
                                                             }
-                                                            
-                                                        } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
-                                                            $totalM=$somme;
-                                                            $encours = $tricot - $somme; // Un autre calcul
-                                                    
-                                                        }
-                                                        elseif ($operation == 'Lavage') {
-                                                            $totalLav = $somme;
-                                                              $encours = $totalLav - $totalM; 
-                                                        }
-                                                        
-                                                        elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
-                                                            $tP=$somme;
-                                                              $encours = $somme - $totalLav; 
-                                                        }
-                                                        elseif ($op== 'Qc mending') {
-                                                            $TQC=$somme;
-                                                              $encours = $somme - $tP; 
-                                                        }
 
-                                                        elseif ($op== 'Entrée Packing') {
-                                                              $encours = $somme - $TQC; 
-                                                        }
-                                                        else {
-                                                            $encours = 0;
-                                                        }
-
-                                                        echo $encours;
-                                                    ?>
-                                                    </td>
-                                            </tr>
-                                            
-                                            <!-- Ligne suivante pour les retouches -->
-                                            <tr>
-                                                <td>Retouches</td> <!-- Cellule vide sous l'opération -->
-                                                <?php $total=0 ?>
-                                                <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <td><?php echo $values['retouches'] ?? 'n/a';$total+=$values['retouches'] ?></td> <!-- Valeur retouches -->
-                                                <?php } ?>
-                                                <td> <?php echo $total ?></td> <!-- Colonne vide pour le total -->
-                                                <td><?php 
-                                                        $RM=0;$Lav=0;$P=0;$QC=0;$tri=0;
-                                                        // Exemple de calcul en fonction de l'opération
-                                                        if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
-                                                            if(isset($qte)){
-                                                                $tri=$total;
-                                                                $encours = $total - $totalqte;
+                                                            elseif ($op== 'Entrée Packing') {
+                                                                $encours = $Total - $totalQC; 
                                                             }
-                                                            else{
-                                                                $encours = $total;
+                                                            else {
+                                                                $encours = 0;
                                                             }
-                                                            
-                                                        } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
-                                                            $RM=$total;
-                                                            $encours = $tri - $total; // Un autre calcul
-                                                    
-                                                        }
-                                                        elseif ($operation == 'Lavage') {
-                                                            $Lav = $total;
-                                                              $encours = $Lav - $RM; 
-                                                        }
-                                                        
-                                                        elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
-                                                            $P=$total;
-                                                              $encours = $total - $Lav; 
-                                                        }
-                                                        elseif ($op== 'Qc mending') {
-                                                            $QC=$total;
-                                                              $encours = $total - $P; 
-                                                        }
 
-                                                        elseif ($op== 'Entrée Packing') {
-                                                              $encours = $total - $QC; 
-                                                        }
-                                                        else {
-                                                            $encours = 0;
-                                                        }
-
-                                                        echo $encours;
-                                                    ?></td>
-                                            </tr>
-                                        <?php } ?>
-                                    </tbody>
-                                    <!-- <tfoot>
-                                        <tr>
-                                            <th colspan="1">Total</th>
-                                            <th></th>
-                                            <th colspan="2"></th>
-                                            
-                                        </tr>
-                                    </tfoot> -->
-                                </table>
-                                    <h4 class="bg-secondary ">Quantité Commande: <?php echo $qte ?? 0 ;?>   </h4>
-                                <table class="table table-bordered  ">
-                                    <thead>
-                                        <tr> 
-                                           <th>Situation</th>
-                                           <?php foreach ($tailles as $taille => $values) { ?>
-                                                <th><?php echo $taille;  ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
-                                            <?php } ?>
-                                            <th>TOTAL</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Qte Commande</td>
-                                           
-                                              <?php  if(isset($quantitesParTaille)){?>
-                                                <?php foreach ($quantitesParTaille as $taille => $qte) { ?>
-                                                    <td><?php echo $qte ?? 0 ;?></td> 
-                                                <?php } ?>
-                                                 <td><?php echo $totalqte;?></td>
-                                             <?php }else{?>
-                                             
-                                            <?php } ?>
-                                        </tr>
-                                        <tr>
-                                             <td>OK PROD</td>
-                                            <?php  if(isset($okprodParTaille)){?>
-                                             <?php foreach ($okprodParTaille as $taille => $values) { ?>
-                                                    <td><?php echo $values; ?></td> 
-                                            <?php } ?>
-                                            <?php }else{?>
-                                             
-                                            <?php } ?>
-                                            <td><?php echo $totalokprod ;?></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Reste à envoyé</td>
-                                             <?php if (isset($quantitesParTaille) && isset($okprodParTaille)) { ?>
-                                                <?php foreach ($quantitesParTaille as $taille => $qte) { ?>
-                                                    <td>
-                                                        <?php 
-                                                            // Calcule la différence entre $qte et $values (par taille)
-                                                            $values = $okprodParTaille[$taille] ?? 0;
-                                                            $difference = $qte - $values;
-                                                            echo $difference;
+                                                            echo $encours;
                                                         ?>
-                                                    </td>
-                                                <?php } ?>
-                                                <td><?php echo $totalqte - $totalokprod; ?></td> <!-- Différence totale -->
+                                                        </td>
+                                                </tr>
+                                                
+                                                <!-- Ligne suivante pour le second choix (finis2) -->
+                                                <tr class="operation-row" data-operation="<?php echo $operation; ?>">
+                                                    <?php $somme=0 ?>
+                                                    <td>Second choix</td> <!-- Cellule vide sous l'opération -->
+                                                    <?php foreach ($tailles as $taille => $values) { ?>
+                                                        <td><?php echo $values['finis2'] ?? '';$somme+=$values['finis2'] ?></td> <!-- Valeur finis2 -->
+                                                    <?php } ?>
+                                                    <td><?php echo $somme?></td> <!-- Colonne vide pour le total -->
+                                                    <td><?php 
+                                                            $totalM=0;$totalLav=0;$tP=0;$TQC=0;$tricot=0;
+                                                            // Exemple de calcul en fonction de l'opération
+                                                            if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
+                                                                if(isset($qte)){
+                                                                    $tricot=$somme;
+                                                                    $encours = $somme - $totalqte;
+                                                                }
+                                                                else{
+                                                                    $encours = $somme;
+                                                                }
+                                                                
+                                                            } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
+                                                                $totalM=$somme;
+                                                                $encours = $tricot - $somme; // Un autre calcul
+                                                        
+                                                            }
+                                                            elseif ($operation == 'Lavage') {
+                                                                $totalLav = $somme;
+                                                                $encours = $totalLav - $totalM; 
+                                                            }
+                                                            
+                                                            elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
+                                                                $tP=$somme;
+                                                                $encours = $somme - $totalLav; 
+                                                            }
+                                                            elseif ($op== 'Qc mending') {
+                                                                $TQC=$somme;
+                                                                $encours = $somme - $tP; 
+                                                            }
+
+                                                            elseif ($op== 'Entrée Packing') {
+                                                                $encours = $somme - $TQC; 
+                                                            }
+                                                            else {
+                                                                $encours = 0;
+                                                            }
+
+                                                            echo $encours;
+                                                        ?>
+                                                        </td>
+                                                </tr>
+                                                
+                                                <!-- Ligne suivante pour les retouches -->
+                                                <tr class="operation-row" data-operation="<?php echo $operation; ?>">
+                                                    <td>Retouches</td> <!-- Cellule vide sous l'opération -->
+                                                    <?php $total=0 ?>
+                                                    <?php foreach ($tailles as $taille => $values) { ?>
+                                                        <td><?php echo $values['retouches'] ?? '';$total+=$values['retouches'] ?></td> <!-- Valeur retouches -->
+                                                    <?php } ?>
+                                                    <td> <?php echo $total ?></td> <!-- Colonne vide pour le total -->
+                                                    <td><?php 
+                                                            $RM=0;$Lav=0;$P=0;$QC=0;$tri=0;
+                                                            // Exemple de calcul en fonction de l'opération
+                                                            if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
+                                                                if(isset($qte)){
+                                                                    $tri=$total;
+                                                                    $encours = $total - $totalqte;
+                                                                }
+                                                                else{
+                                                                    $encours = $total;
+                                                                }
+                                                                
+                                                            } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
+                                                                $RM=$total;
+                                                                $encours = $tri - $total; // Un autre calcul
+                                                        
+                                                            }
+                                                            elseif ($operation == 'Lavage') {
+                                                                $Lav = $total;
+                                                                $encours = $Lav - $RM; 
+                                                            }
+                                                            
+                                                            elseif ($operation == 'POSE ETIQUETTE'|| $operation == 'Petit_main') {
+                                                                $P=$total;
+                                                                $encours = $total - $Lav; 
+                                                            }
+                                                            elseif ($op== 'Qc mending') {
+                                                                $QC=$total;
+                                                                $encours = $total - $P; 
+                                                            }
+
+                                                            elseif ($op== 'Entrée Packing') {
+                                                                $encours = $total - $QC; 
+                                                            }
+                                                            else {
+                                                                $encours = 0;
+                                                            }
+
+                                                            echo $encours;
+                                                        ?></td>
+                                                </tr>
                                             <?php } ?>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                        </tbody>
+                                    </table>
+                                   
                                 </div>
                             </div>
                         </div>
                     <?php } ?>
-                    
+                     <div class="row">
+                    <div class="col-md-6 mb-4">   
+                        <div class="card">   
+                            <div class="card-body">
+                            <?php if(isset($dataByCouleur)):?>
+                                <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th style="text-align: center;" colspan="<?php echo count($tailles) * 2 + 2; ?>">Date</th>
+                                            </tr>
+                                            <tr>
+                                                <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
+                                            </tr>
+                                            <tr>
+                                                <th>Situation</th>
+                                                
+                                                <!-- Afficher les colonnes de taille et idcomdet pour chaque taille -->
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <th  style="text-align: center;"><?php echo $taille; ?></th> <!-- Affiche la taille -->
+                                                <?php endforeach; ?>
+                                                <th>TOTAL</th>
+                                            </tr>
+                                        
+                                        </thead>
+                                        <tbody>
+                                            <!-- Ligne pour Qte Commande -->
+                                            <tr>
+                                                <td>Qte Commande</td>
+                                                <?php $totalQte = 0; ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <td><?php echo $details['qte']; ?></td>
+                                                        <?php $totalQte += $details['qte']; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <td><?php echo $totalQte; ?></td>
+                                            </tr>
+
+                                            <!-- Ligne pour OK PROD -->
+                                            <tr>
+                                                <td>OK CHIP</td>
+                                                
+                                                <?php $totalOkProd = 0; ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <td>
+                                                        <input 
+                                                            type="number" 
+                                                            value="<?php echo $details['okprod']; ?>" 
+                                                            data-idcomdet="<?php echo $idcomdet; ?>"  
+                                                            onchange="updateOkProd(this)" 
+                                                        />
+                                                        </td>
+                                                        <?php $totalOkProd += $details['okprod']; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <td><?php echo $totalOkProd; ?></td>
+                                            </tr>
+
+                                            <!-- Ligne pour Reste à envoyer -->
+                                            <tr>
+                                                <td>Reste à envoyer</td>
+                                                <?php $resteTotal = 0; ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <?php $reste = $details['qte'] - $details['okprod']; ?>
+                                                        <td><?php echo $reste; ?></td>
+                                                        <?php $resteTotal += $reste; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <td><?php echo $resteTotal; ?></td>
+                                            </tr>
+                                            <tr>
+                                            <td>Différence</td>
+                                            <?php $differenceTotal = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php $difference = ($details['qte'] - $details['okprod']) - $details['qte']; ?>
+                                                    <td><?php echo $difference; ?></td>
+                                                    <?php $differenceTotal += $difference; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
+                                        </tr>
+                                        <tr>
+                                            <td>Pourcentage</td>
+                                            <?php $resteTotal = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php $pourcentage = (($details['qte'] - $details['okprod'])/$details['qte'])*100; ?>
+                                                    <td><?php echo $pourcentage; ?>%</td>
+                                                    
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td></td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                <?php endforeach; ?>
+
+                            <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 </div>
             </div>
     <?php } ?>
@@ -874,6 +1013,18 @@ if (mysqli_num_rows($result) > 0) {
 </footer>
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('.operation-toggle').change(function() {
+        var operation = $(this).val();
+        if ($(this).is(':checked')) {
+            $('tr[data-operation="' + operation + '"]').show();
+        } else {
+            $('tr[data-operation="' + operation + '"]').hide();
+        }
+    });
+});
+</script>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
@@ -882,6 +1033,46 @@ if (mysqli_num_rows($result) > 0) {
 <script src="../general/assets/js/bs-init.js"></script>
 <script src="../general/assets/js/bold-and-bright.js"></script>
 <script src="../general/assets/js/Dark-Mode-Switch-darkmode.js"></script>
+<script>
+
+  function updateOkProd(inputElement) {
+    var newValue = inputElement.value; // La nouvelle valeur modifiée
+    var idcomdet = inputElement.getAttribute('data-idcomdet'); // Récupérer l'ID associé
+    console.log(inputElement.value);
+    console.log(inputElement.getAttribute('data-idcomdet'));
+    
+
+    // Création de la requête AJAX
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'update_okprod.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+    // Envoyer les paramètres : l'ID et la nouvelle valeur
+    var params = 'idcomdet=' + idcomdet + '&okprod=' + newValue;
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            
+            console.log('Réponse brute du serveur:', xhr.responseText);
+            var response = JSON.parse(xhr.responseText);
+            if (response.status === 'success') {
+                
+                console.log('Mise à jour réussie');
+                 location.reload(); 
+               
+            } else {
+                console.error('Erreur : ' + response.message);
+            }
+        } else {
+            console.error('Erreur AJAX');
+        }
+    };
+
+    xhr.send(params); // Envoie les données au serveur
+}
+
+
+</script>
 </body>
 </html>
 

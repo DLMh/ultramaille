@@ -71,8 +71,6 @@
                     <th>OF</th>
                     <th>Collection</th>
                     <th>Réference Commandes</th>
-                    <th>Réference CRM</th>
-                    <th>Status</th>
                     <th></th>
                     <th></th>
                 </tr>
@@ -84,8 +82,7 @@
                         <td><?php  echo $row['NumOF']; ?></td>
                         <td><?php echo mb_convert_encoding($row['NomCollect'], 'UTF-8', 'auto'); ?></td>
                         <td><?php   echo mb_convert_encoding($row['RefCde'], 'UTF-8', 'ISO-8859-1') ; ?></td>
-                        <td><?php  echo $row['RefCRM']; ?></td>
-                        <td>...</td>
+                      
                         <td>
                             <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>&&collection=<?php echo $row['NomCollect'] ?>">
                                 <button class="btn btn-info">Suivi</button>
