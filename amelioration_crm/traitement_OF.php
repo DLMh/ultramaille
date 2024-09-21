@@ -259,6 +259,10 @@ if (mysqli_num_rows($result) > 0) {
     if(!empty($donnees))
     {
         $dataByCouleur = [];
+        $totalcommande=0;
+        $totalokchip=0;
+        $totalprochaineenvoi=0;
+      
 
         foreach ($donnees as $donnee) {
             $desc_type = $donnee['desc_type'];
@@ -269,6 +273,10 @@ if (mysqli_num_rows($result) > 0) {
             $qte = $donnee['qte'];
             $idcomdet = $donnee['idcomdet'];
             $desc_coul = $donnee['desc_coul'];
+            $totalcommande+=$donnee['qte'];
+            $totalokchip+=$donnee['ok_prod'];
+            $totalprochaineenvoi+=($donnee['qte']-$donnee['ok_prod']);
+
 
             // Vérifier si la couleur est déjà dans le tableau
             if (!isset($dataByCouleur[$desc_coul])) {
@@ -613,7 +621,7 @@ if (mysqli_num_rows($result) > 0) {
                                         </tr>
                                         <tr>
                                             <td>Pourcentage</td>
-                                            <?php $resteTotal = 0; ?>
+                                            <?php $pourcentage = 0; ?>
                                             <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                 <?php foreach ($idcomdets as $idcomdet => $details): ?>
                                                     <?php $pourcentage = (($details['qte'] - $details['okprod'])/$details['qte'])*100; ?>
@@ -621,7 +629,7 @@ if (mysqli_num_rows($result) > 0) {
                                                     
                                                 <?php endforeach; ?>
                                             <?php endforeach; ?>
-                                            <td></td>
+                                            <td><?php echo round(($resteenvoie/$totalQte)*100); ?>%</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -631,7 +639,41 @@ if (mysqli_num_rows($result) > 0) {
                             </div>
                         </div>
                     </div>
+                      
                 </div>
+               <div class="row">
+                    <div class="col mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                    <table class="table table-bordered">
+                                        <tbody>
+                                            <tr>
+                                                <td>Total Commande</td>
+                                                <td><?php echo $totalcommande;?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>OK CHIP</td>
+                                                <td><?php echo $totalokchip; ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Prochaine envoie</td>
+                                                <td><?php echo $totalprochaineenvoi ;?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Différence</td>
+                                                <td><?php echo $totalprochaineenvoi-$totalcommande;?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Pourcentage</td>
+                                                <td><?php echo round(($totalprochaineenvoi/$totalcommande)*100) ; ?>%</td>
+                                            </tr>
+                                    
+                                        </tbody>
+                                    </table>
+                            </div>
+                        </div>
+                    </div>
+               </div>
             </div>
             <!-- fin -->
         
@@ -874,7 +916,7 @@ if (mysqli_num_rows($result) > 0) {
                             </div>
                         </div>
                     <?php } ?>
-                     <div class="row">
+                <div class="row">
                     <div class="col-md-6 mb-4">   
                         <div class="card">   
                             <div class="card-body">
@@ -937,7 +979,7 @@ if (mysqli_num_rows($result) > 0) {
                                             <!-- Ligne pour Reste à envoyer -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
-                                                <?php $resteTotal = 0; ?>
+                                                <?php $resteTotal = 0;$r=0; ?>
                                                 <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                     <?php foreach ($idcomdets as $idcomdet => $details): ?>
                                                         <?php $reste = $details['qte'] - $details['okprod']; ?>
@@ -945,7 +987,7 @@ if (mysqli_num_rows($result) > 0) {
                                                         <?php $resteTotal += $reste; ?>
                                                     <?php endforeach; ?>
                                                 <?php endforeach; ?>
-                                                <td><?php echo $resteTotal; ?></td>
+                                                <td><?php $r=$resteTotal;echo $resteTotal; ?></td>
                                             </tr>
                                             <tr>
                                             <td>Différence</td>
@@ -969,7 +1011,7 @@ if (mysqli_num_rows($result) > 0) {
                                                     
                                                 <?php endforeach; ?>
                                             <?php endforeach; ?>
-                                            <td></td>
+                                            <td><?php echo round(($r/$totalQte)*100); ?>%</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -980,6 +1022,39 @@ if (mysqli_num_rows($result) > 0) {
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                    <table class="table table-bordered">
+                                        <tbody>
+                                            <tr>
+                                                <td>Total Commande</td>
+                                                <td><?php echo $totalcommande;?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>OK CHIP</td>
+                                                <td><?php echo $totalokchip; ?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Prochaine envoie</td>
+                                                <td><?php echo $totalprochaineenvoi ;?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Différence</td>
+                                                <td><?php echo $totalprochaineenvoi-$totalcommande;?></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Pourcentage</td>
+                                                <td><?php echo round(($totalprochaineenvoi/$totalcommande)*100) ; ?>%</td>
+                                            </tr>
+                                    
+                                        </tbody>
+                                    </table>
+                            </div>
+                        </div>
+                    </div>
+               </div>
                 </div>
             </div>
     <?php } ?>
