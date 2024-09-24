@@ -3,6 +3,23 @@
 
  include("../../admin/databases/db_sql_server.php");
  include("../../admin/databases/db_to_mysql.php");
+ include("./comparaison.php");
+
+//  // Couleurs à comparer
+// $colorGPAO = "Camel";
+// $colorCRM = "Camel 2k";
+
+// // Normalisation des couleurs
+// $normalizedColorGPAO = normalizeColor($colorGPAO);
+// $normalizedColorCRM = normalizeColor($colorCRM);
+
+// // Vérification de la similarité
+// if (areColorsSimilar($normalizedColorGPAO, $normalizedColorCRM)) {
+//     $resul=areColorsSimilar($normalizedColorGPAO, $normalizedColorCRM);
+//     echo "Les couleurs sont considérées comme identiques.".$resul;
+// } else {
+//     echo "Les couleurs sont différentes.";
+// }
  
 
 // Vérification des paramètres GET
@@ -142,7 +159,7 @@ if ($var != 0) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Packing List</title>
+    <title>Suivi de production</title>
     <link rel="stylesheet" href="../general/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&amp;display=swap">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -183,76 +200,79 @@ if ($var != 0) {
 // Requête SQL
 $totalqte=0;
 $totalokprod=0;
-if($RefCRM!='VIDE'){
+if($RefCRM!='VIDE' && $RefCRM!==''){
     $sql = "SELECT desc_type,numcde,desc_ref,qte,desc_taille,ok_prod,idcomdet,desc_coul FROM `commande_mvt` WHERE idcom=".$RefCRM." and (desc_type='".$RefCde."' OR desc_ref='".$RefCde."')";
-$result = mysqli_query($conn, $sql);
+    // var_dump($sql);
+    $result = mysqli_query($conn, $sql);
 
-// Vérifier si des résultats ont été retournés
+    // Vérifier si des résultats ont été retournés
 
-    // Tableau pour stocker les résultats
-$donnees = [];
+        // Tableau pour stocker les résultats
+    $donnees = [];
 
 
-if (mysqli_num_rows($result) > 0) {
-    // Parcourir les résultats et stocker dans le tableau
-    while($row = mysqli_fetch_assoc($result)) {
-        $donnees[] = [
-            'desc_type' => $row["desc_type"],
-            'numcde'    => $row["numcde"],
-            'desc_ref'  => $row["desc_ref"],
-            'desc_taille' => $row["desc_taille"],
-            'ok_prod' => $row["ok_prod"],
-            'idcomdet'=> $row["idcomdet"],
-            'qte'       => $row["qte"],
-            'desc_coul'       => $row["desc_coul"]
+    if (mysqli_num_rows($result) > 0) {
+        // Parcourir les résultats et stocker dans le tableau
+        while($row = mysqli_fetch_assoc($result)) {
+            $donnees[] = [
+                'desc_type' => $row["desc_type"],
+                'numcde'    => $row["numcde"],
+                'desc_ref'  => $row["desc_ref"],
+                'desc_taille' => $row["desc_taille"],
+                'ok_prod' => $row["ok_prod"],
+                'idcomdet'=> $row["idcomdet"],
+                'qte'       => $row["qte"],
+                'desc_coul'       => $row["desc_coul"]
 
-        ];
-    }
-        } else {
-            echo "0 résultats pour qte commande";
+            ];
         }
-
-        // Fermer la connexion
-        mysqli_close($conn);
-     ?>
-     <?php if (!empty($donnees)) {
-        $qte=0;$desc_ref=0;$desc_type=0;$numcde=0;$quantitesParTaille = array();$okprodParTaille= array();$idcomdet=0;$idcomdetParTaille= array();$idcomdetParCouleur= array();
-        
-    foreach ($donnees as $donnee) {
-         $desc_type=$donnee['desc_type'] ;
-         $numcde=$donnee['numcde'] ;
-         $desc_ref=$donnee['desc_ref'] ;
-         $desc_taille=$donnee['desc_taille'];
-         $okprod=$donnee['ok_prod'];
-         $qte=$donnee['qte'] ;
-         $idcomdet=$donnee['idcomdet'];
-         $desc_coul = $donnee['desc_coul']; 
-        // Vérifier si la taille est déjà dans le tableau
-        if (!isset($quantitesParTaille[$desc_taille])) {
-            $quantitesParTaille[$desc_taille] = 0; // Initialiser la quantité pour cette taille
-        }
-         if (!isset($okprodParTaille[$desc_taille])) {
-            $okprodParTaille[$desc_taille] = 0; // Initialiser l'ok prod pour cette taille
-        }
-        if(!isset($idcomdetParTaille[$desc_taille][$desc_coul])){
-            $idcomdetParTaille[$desc_taille][$desc_coul] = 0;
-        }
-
-        // Ajouter la quantité à la taille correspondante
-        $quantitesParTaille[$desc_taille] = (int)$qte;
-        $okprodParTaille[$desc_taille] = (int)$okprod;
-
-        $idcomdetParTaille[$desc_taille][$desc_coul]=(int)$idcomdet;
-
+    } else {
+        echo "0 résultats pour qte commande";
     }
 
-    foreach ($quantitesParTaille as $taille => $qte) { 
-         $totalqte+=$qte;
-    } 
-    foreach ($okprodParTaille as $taille => $ok) { 
-         $totalokprod+=$ok;
-    } 
-}
+            // Fermer la connexion
+            mysqli_close($conn);
+        ?>
+        <?php if (!empty($donnees)) {
+            $qte=0;$desc_ref=0;$desc_type=0;$numcde=0;$quantitesParTaille = array();$okprodParTaille= array();$idcomdet=0;$idcomdetParTaille= array();$idcomdetParCouleur= array();
+            
+            foreach ($donnees as $donnee) {
+                $desc_type=$donnee['desc_type'] ;
+                $numcde=$donnee['numcde'] ;
+                $desc_ref=$donnee['desc_ref'] ;
+                $desc_taille=$donnee['desc_taille'];
+                $okprod=$donnee['ok_prod'];
+                $qte=$donnee['qte'] ;
+                $idcomdet=$donnee['idcomdet'];
+                $desc_coul = $donnee['desc_coul']; 
+                // Vérifier si la taille est déjà dans le tableau
+                if (!isset($quantitesParTaille[$desc_taille])) {
+                    $quantitesParTaille[$desc_taille] = 0; // Initialiser la quantité pour cette taille
+                }
+                if (!isset($okprodParTaille[$desc_taille])) {
+                    $okprodParTaille[$desc_taille] = 0; // Initialiser l'ok prod pour cette taille
+                }
+                if(!isset($idcomdetParTaille[$desc_taille][$desc_coul])){
+                    $idcomdetParTaille[$desc_taille][$desc_coul] = 0;
+                }
+
+                // Ajouter la quantité à la taille correspondante
+                $quantitesParTaille[$desc_taille] = (int)$qte;
+                $okprodParTaille[$desc_taille] = (int)$okprod;
+
+                $idcomdetParTaille[$desc_taille][$desc_coul]=(int)$idcomdet;
+
+            }
+
+            foreach ($quantitesParTaille as $taille => $qte) { 
+                $totalqte+=$qte;
+            } 
+            foreach ($okprodParTaille as $taille => $ok) { 
+                $totalokprod+=$ok;
+            } 
+    }
+}else{
+    echo 'aucune commande sur le CRM';
 }
 ?>
 <?php
@@ -275,7 +295,7 @@ if (mysqli_num_rows($result) > 0) {
             $desc_coul = $donnee['desc_coul'];
             $totalcommande+=$donnee['qte'];
             $totalokchip+=$donnee['ok_prod'];
-            $totalprochaineenvoi+=($donnee['qte']-$donnee['ok_prod']);
+            
 
 
             // Vérifier si la couleur est déjà dans le tableau
@@ -322,9 +342,11 @@ if (mysqli_num_rows($result) > 0) {
                 <p><strong>REFERENCE:</strong> <?php echo mb_convert_encoding($RefCde, 'UTF-8', 'ISO-8859-1')  ?> - <?php echo  $desc_ref ?? 'n/a' ; ?> </p>
             </div>
         </div>         
-            <?php
+        <?php
             $grouped_by_color = [];
             $finis1_total = 0;
+            // var_dump($singleOFValues['Entrée Packing']['IVORY']['S']['finis1']);
+
             // Regrouper les opérations par couleur et taille
             foreach ($singleOFValues as $operation => $colors) {
                 foreach ($colors as $couleur => $tailles) {
@@ -334,6 +356,15 @@ if (mysqli_num_rows($result) > 0) {
                     $grouped_by_color[$couleur][$operation] = $tailles; // Regrouper par taille aussi
                 }
             }
+
+            
+        
+
+            //  foreach ($singleOFValues['Entrée Packing'] as $couleur => $tailles) {
+            //     foreach ($tailles as $taille => $values) {
+            //         echo "Couleur: $couleur, Taille: $taille, finis1: {$values['finis1']}<br>";
+            //     }
+            // }
         ?>
             <div class="container mt-4">
                 <h1 class="text-center mb-4">Détails des Opérations</h1>
@@ -377,7 +408,7 @@ if (mysqli_num_rows($result) > 0) {
                                                             <td> <?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
                                                         <?php } ?>
                                                         <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
-                                                        <td> 
+                                                        
                                                             <?php 
                                                             
                                                                 // Exemple de calcul en fonction de l'opération
@@ -416,15 +447,22 @@ if (mysqli_num_rows($result) > 0) {
                                                                     $encours = 0;
                                                                 }
 
-                                                                echo $encours;
+                                                                
                                                             ?>
+                                                        <?php if($encours<0){?>
+                                                            <td style="background-color: red;"><?php echo $encours; ?></td>
+                                                        <?php }else {?>
+
+                                                        <td> 
+                                                            <?php echo $encours; ?>
                                                         </td>
+                                                        <?php } ?>
                                                     </tr>
                                                     
                                                     <!-- Ligne suivante pour le second choix (finis2) -->
                                                     <tr class="operation-row" data-operation="<?php echo $operation; ?>">
                                                         <?php $somme=0 ?>
-                                                        <td>2eme Choix</td> <!-- Cellule vide sous l'opération -->
+                                                        <td>Second Choix</td> <!-- Cellule vide sous l'opération -->
                                                         <?php foreach ($tailles as $taille => $values) { ?>
                                                             <td><?php echo $values['finis2'] ?? '';$somme+=$values['finis2'] ?></td> <!-- Valeur finis2 -->
                                                         <?php } ?>
@@ -468,7 +506,7 @@ if (mysqli_num_rows($result) > 0) {
                                                                     $encours = 0;
                                                                 }
 
-                                                                echo $encours;
+                                                                $encours;
                                                             ?>
                                                         </td>
                                                     </tr>
@@ -519,7 +557,7 @@ if (mysqli_num_rows($result) > 0) {
                                                                     $encours = 0;
                                                                 }
 
-                                                                echo $encours;
+                                                                 $encours;
                                                             ?>
                                                             </td>
                                                     </tr>
@@ -538,110 +576,149 @@ if (mysqli_num_rows($result) > 0) {
                     <div class="col-md-6 mb-4">   
                         <div class="card">   
                             <div class="card-body">
-                                <?php  $resteenvoie=0;?>
-                            <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
-                                <table class="table table-bordered">
-                                    <thead>
-                                        <tr>
-                                            <th style="text-align: center;" colspan="<?php echo count($tailles) * 2 + 2; ?>">Date</th>
-                                        </tr>
-                                        <tr>
-                                            <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
-                                        </tr>
-                                        <tr>
-                                            <th>Situation</th>
-                                            
-                                            <!-- Afficher les colonnes de taille et idcomdet pour chaque taille -->
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <th  style="text-align: center;"><?php echo $taille; ?></th> <!-- Affiche la taille -->
-                                            <?php endforeach; ?>
-                                            <th>TOTAL</th>
-                                        </tr>
-                                       
-                                    </thead>
-                                    <tbody>
-                                        <!-- Ligne pour Qte Commande -->
-                                        <tr>
-                                            <td>Qte Commande</td>
-                                            <?php $totalQte = 0; ?>
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <td><?php echo $details['qte']; ?></td>
-                                                    <?php $totalQte += $details['qte']; ?>
+                                <?php  $resteEnvoyerArray = [];$tabtotalResteEnvoyer=[]; ?>
+                            <?php if(isset($dataByCouleur)):?>    
+                                <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
+                                            </tr>
+                                            <tr>
+                                                <th>Situation</th>
+                                                
+                                                <!-- Afficher les colonnes de taille et idcomdet pour chaque taille -->
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <th  style="text-align: center;"><?php echo $taille; ?></th> <!-- Affiche la taille -->
                                                 <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                            <td><?php echo $totalQte; ?></td>
-                                        </tr>
+                                                <th>TOTAL</th>
+                                            </tr>
+                                        
+                                        </thead>
+                                        <tbody>
+                                            <!-- Ligne pour Qte Commande -->
+                                            <tr>
+                                                <td>Qte Commande</td>
+                                                <?php $totalQte = 0; ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <td><?php echo $details['qte']; ?></td>
+                                                        <?php $totalQte += $details['qte']; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <td><?php echo $totalQte; ?></td>
+                                            </tr>
 
-                                        <!-- Ligne pour OK PROD -->
-                                        <tr>
-                                            <td>OK CHIP</td>
-                                            
-                                            <?php $totalOkProd = 0; ?>
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <td>
-                                                    <input 
-                                                        type="number" 
-                                                        value="<?php echo $details['okprod']; ?>" 
-                                                        data-idcomdet="<?php echo $idcomdet; ?>"  
-                                                        onchange="updateOkProd(this)" 
-                                                    />
-                                                    </td>
-                                                    <?php $totalOkProd += $details['okprod']; ?>
+                                            <!-- Ligne pour OK PROD -->
+                                            <tr>
+                                                <td>OK SHIP</td>
+                                                
+                                                <?php $totalOkProd = 0; ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <td>
+                                                        <input 
+                                                            type="number" 
+                                                            value="<?php echo $details['okprod']; ?>" 
+                                                            data-idcomdet="<?php echo $idcomdet; ?>"  
+                                                            onchange="updateOkProd(this)" 
+                                                        />
+                                                        </td>
+                                                        <?php $totalOkProd += $details['okprod']; ?>
+                                                    <?php endforeach; ?>
                                                 <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                            <td><?php echo $totalOkProd; ?></td>
-                                        </tr>
+                                                <td><?php echo $totalOkProd; ?></td>
+                                            </tr>
 
-                                        <!-- Ligne pour Reste à envoyer -->
-                                        <tr>
-                                            <td>Reste à envoyer</td>
-                                            <?php $resteTotal = 0; ?>
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php $reste = $details['qte'] - $details['okprod']; ?>
-                                                    <td><?php echo $reste; ?></td>
-                                                    <?php $resteTotal += $reste; ?>
-                                                <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                            <td><?php $resteenvoie=$resteTotal;echo $resteTotal; ?></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Différence</td>
-                                            <?php $differenceTotal = 0; ?>
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php $difference = ($details['qte'] - $details['okprod']) - $details['qte']; ?>
-                                                    <td><?php echo $difference; ?></td>
-                                                    <?php $differenceTotal += $difference; ?>
-                                                <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                            <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
-                                        </tr>
-                                        <tr>
-                                            <td>Pourcentage</td>
-                                            <?php $pourcentage = 0; ?>
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php $pourcentage = (($details['qte'] - $details['okprod'])/$details['qte'])*100; ?>
-                                                    <td><?php echo $pourcentage; ?>%</td>
-                                                    
-                                                <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                            <td><?php echo round(($resteenvoie/$totalQte)*100); ?>%</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            <?php endforeach; ?>
+                                                        <!-- Ligne pour "Reste à envoyer" -->
+                                            <tr>
+                                                <td>Reste à envoyer</td>
+                                                <?php $totalResteEnvoyer = 0;?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <?php
+                                                        // Normalisation et comparaison des couleurs et tailles
+                                                        $normalizedCouleur = normalizeColor($couleur);
+                                                        $normalizedTaille = normalizeSize($taille);
+                                                        $packingFound = false;
+                                                        $packingValue = 0;
 
+                                                        // Recherche dans les valeurs de "Entrée Packing"
+                                                        foreach ($singleOFValues['Entrée Packing'] as $packingCouleur => $packingTailles) {
+                                                            $normalizedPackingCouleur = normalizeColor($packingCouleur);
 
+                                                            // Si les couleurs sont similaires
+                                                            if (areColorsSimilar($normalizedCouleur, $normalizedPackingCouleur)) {
+                                                                foreach ($packingTailles as $packingTaille => $values) {
+                                                                    $normalizedPackingTaille = normalizeSize($packingTaille);
+
+                                                                    // Si les tailles sont identiques
+                                                                    if ($normalizedTaille === $normalizedPackingTaille) {
+                                                                        $packingValue = $values['finis1']; // Assigner la valeur de 'finis1'
+                                                                        $packingFound = true;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+                                                            if ($packingFound) {
+                                                                break;
+                                                            }
+                                                        }
+                                                        $resteEnvoyer = $packingValue - $details['okprod'];
+                                                        $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
+
+                                                        // Affichage de la valeur "Reste à envoyer" (celle de "Entrée Packing" si trouvé)
+                                                        ?>
+                                                       <td><?php echo $packingFound ? $resteEnvoyer : 'N/A'; ?></td>
+                                                        <?php $totalResteEnvoyer += $resteEnvoyer; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <td><?php echo $totalResteEnvoyer; ?></td> <!-- Total des "Reste à envoyer" -->
+                                                <?php $tabtotalResteEnvoyer[]= $totalResteEnvoyer; // Ajouter au total global ?>
+                                            </tr>
+                                            <tr>
+                                                <td>Différence</td>
+                                                <?php $differenceTotal = 0; ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <?php 
+                                                        $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
+                                                        $difference = ($resteenvoie + $details['okprod']) - $details['qte']; 
+                                                        
+                                                        ?>
+                                                        <td><?php echo $difference; ?></td>
+                                                        <?php $differenceTotal += $difference; ?>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
+                                            </tr>
+                                            <tr>
+                                                <td>Pourcentage</td>
+                                                <?php $pourcentage = 0; ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <?php 
+                                                            $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
+                                                            $pourcentage = (($resteenvoie + $details['okprod'])/$details['qte'])*100; 
+                                                            
+                                                        ?>
+                                                        <td><?php echo round($pourcentage); ?>%</td>
+                                                        
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+                                                <td><?php echo round((($totalOkProd+$totalResteEnvoyer)/$totalQte)*100); ?>%</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                             </div>
                         </div>
                     </div>
                       
                 </div>
-               <div class="row">
+                <?php  if(!empty($donnee)):?>
+                    <div class="row">
                     <div class="col mb-4">
                         <div class="card">
                             <div class="card-body">
@@ -656,16 +733,16 @@ if (mysqli_num_rows($result) > 0) {
                                                 <td><?php echo $totalokchip; ?></td>
                                             </tr>
                                             <tr>
-                                                <td>Prochaine envoie</td>
-                                                <td><?php echo $totalprochaineenvoi ;?></td>
+                                                <td>Reste à envoyer</td>
+                                                <td><?php $grandtotalresteenvoyer= array_sum($tabtotalResteEnvoyer); echo $grandtotalresteenvoyer;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Différence</td>
-                                                <td><?php echo $totalprochaineenvoi-$totalcommande;?></td>
+                                                <td><?php echo $grandtotalresteenvoyer+$totalokchip-$totalcommande;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Pourcentage</td>
-                                                <td><?php echo round(($totalprochaineenvoi/$totalcommande)*100) ; ?>%</td>
+                                                <td><?php echo round((($grandtotalresteenvoyer+$totalokchip)/$totalcommande)*100) ; ?>%</td>
                                             </tr>
                                     
                                         </tbody>
@@ -673,7 +750,8 @@ if (mysqli_num_rows($result) > 0) {
                             </div>
                         </div>
                     </div>
-               </div>
+                    </div>
+                <?php endif;?>
             </div>
             <!-- fin -->
         
@@ -765,7 +843,7 @@ if (mysqli_num_rows($result) > 0) {
                                                         <td><?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
                                                     <?php } ?>
                                                     <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
-                                                    <td>  <?php 
+                                                      <?php 
                                                         
                                                             // Exemple de calcul en fonction de l'opération
                                                             if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
@@ -803,9 +881,15 @@ if (mysqli_num_rows($result) > 0) {
                                                                 $encours = 0;
                                                             }
 
-                                                            echo $encours;
+                                                            
                                                         ?>
+                                                        <?php if($encours<0){?>
+                                                            <td style="background-color: red;"><?php echo $encours; ?></td>
+                                                        <?php }else {?>
+                                                        <td> 
+                                                            <?php echo $encours; ?>
                                                         </td>
+                                                        <?php } ?>
                                                 </tr>
                                                 
                                                 <!-- Ligne suivante pour le second choix (finis2) -->
@@ -854,7 +938,7 @@ if (mysqli_num_rows($result) > 0) {
                                                                 $encours = 0;
                                                             }
 
-                                                            echo $encours;
+                                                            $encours;
                                                         ?>
                                                         </td>
                                                 </tr>
@@ -905,7 +989,7 @@ if (mysqli_num_rows($result) > 0) {
                                                                 $encours = 0;
                                                             }
 
-                                                            echo $encours;
+                                                            $encours;
                                                         ?></td>
                                                 </tr>
                                             <?php } ?>
@@ -920,13 +1004,11 @@ if (mysqli_num_rows($result) > 0) {
                     <div class="col-md-6 mb-4">   
                         <div class="card">   
                             <div class="card-body">
+                            <?php  $resteEnvoyerArray = [];$tabtotalResteEnvoyer=[];?>
                             <?php if(isset($dataByCouleur)):?>
                                 <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
                                     <table class="table table-bordered">
                                         <thead>
-                                            <tr>
-                                                <th style="text-align: center;" colspan="<?php echo count($tailles) * 2 + 2; ?>">Date</th>
-                                            </tr>
                                             <tr>
                                                 <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
                                             </tr>
@@ -957,7 +1039,7 @@ if (mysqli_num_rows($result) > 0) {
 
                                             <!-- Ligne pour OK PROD -->
                                             <tr>
-                                                <td>OK CHIP</td>
+                                                <td>OK SHIP</td>
                                                 
                                                 <?php $totalOkProd = 0; ?>
                                                 <?php foreach ($tailles as $taille => $idcomdets): ?>
@@ -979,22 +1061,59 @@ if (mysqli_num_rows($result) > 0) {
                                             <!-- Ligne pour Reste à envoyer -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
-                                                <?php $resteTotal = 0;$r=0; ?>
+                                                <?php $totalResteEnvoyer = 0; ?>
                                                 <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                     <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                        <?php $reste = $details['qte'] - $details['okprod']; ?>
-                                                        <td><?php echo $reste; ?></td>
-                                                        <?php $resteTotal += $reste; ?>
+                                                        <?php
+                                                        // Normalisation et comparaison des couleurs et tailles
+                                                        $normalizedCouleur = normalizeColor($couleur);
+                                                        $normalizedTaille = normalizeSize($taille);
+                                                        $packingFound = false;
+                                                        $packingValue = 0;
+
+                                                        // Recherche dans les valeurs de "Entrée Packing"
+                                                        foreach ($operation_values['Entrée Packing'] as $packingCouleur => $packingTailles) {
+                                                            $normalizedPackingCouleur = normalizeColor($packingCouleur);
+
+                                                            // Si les couleurs sont similaires
+                                                            if (areColorsSimilar($normalizedCouleur, $normalizedPackingCouleur)) {
+                                                                foreach ($packingTailles as $packingTaille => $values) {
+                                                                    $normalizedPackingTaille = normalizeSize($packingTaille);
+
+                                                                    // Si les tailles sont identiques
+                                                                    if ($normalizedTaille === $normalizedPackingTaille) {
+                                                                        $packingValue = $values['finis1']; // Assigner la valeur de 'finis1'
+                                                                        $packingFound = true;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+                                                            if ($packingFound) {
+                                                                break;
+                                                            }
+                                                        }
+                                                          $resteEnvoyer = $packingValue - $details['okprod'];
+                                                        $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
+
+                                                        // Affichage de la valeur "Reste à envoyer" (celle de "Entrée Packing" si trouvé)
+                                                        ?>
+                                                       <td><?php echo $packingFound ? $resteEnvoyer : 'N/A'; ?></td>
+                                                        <?php $totalResteEnvoyer += $resteEnvoyer; ?>
                                                     <?php endforeach; ?>
                                                 <?php endforeach; ?>
-                                                <td><?php $r=$resteTotal;echo $resteTotal; ?></td>
+                                                <td><?php echo $totalResteEnvoyer; ?></td> <!-- Total des "Reste à envoyer" -->
+                                                 <?php $tabtotalResteEnvoyer[]= $totalResteEnvoyer; // Ajouter au total global ?>
                                             </tr>
                                             <tr>
                                             <td>Différence</td>
                                             <?php $differenceTotal = 0; ?>
                                             <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                 <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php $difference = ($details['qte'] - $details['okprod']) - $details['qte']; ?>
+                                                    
+                                                    <?php 
+                                                            $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
+                                                            $difference = ($resteenvoie + $details['okprod']) - $details['qte']; 
+                                                    ?>
                                                     <td><?php echo $difference; ?></td>
                                                     <?php $differenceTotal += $difference; ?>
                                                 <?php endforeach; ?>
@@ -1006,12 +1125,16 @@ if (mysqli_num_rows($result) > 0) {
                                             <?php $resteTotal = 0; ?>
                                             <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                 <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php $pourcentage = (($details['qte'] - $details['okprod'])/$details['qte'])*100; ?>
+                                                    <?php 
+                                                        $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
+                                                        $pourcentage = (($resteenvoie + $details['okprod'])/$details['qte'])*100; 
+                                                    ?>
                                                     <td><?php echo $pourcentage; ?>%</td>
                                                     
                                                 <?php endforeach; ?>
                                             <?php endforeach; ?>
-                                            <td><?php echo round(($r/$totalQte)*100); ?>%</td>
+                                        
+                                            <td><?php echo round((($totalOkProd+$totalResteEnvoyer)/$totalQte)*100); ?>%</td>
                                         </tr>
                                         </tbody>
                                     </table>
@@ -1022,6 +1145,7 @@ if (mysqli_num_rows($result) > 0) {
                         </div>
                     </div>
                 </div>
+                <?php if(!empty($donnees)) {?>
                 <div class="row">
                     <div class="col mb-4">
                         <div class="card">
@@ -1037,16 +1161,16 @@ if (mysqli_num_rows($result) > 0) {
                                                 <td><?php echo $totalokchip; ?></td>
                                             </tr>
                                             <tr>
-                                                <td>Prochaine envoie</td>
-                                                <td><?php echo $totalprochaineenvoi ;?></td>
+                                                <td>Reste à envoyer</td>
+                                                <td><?php $grandtotalresteenvoyer= array_sum($tabtotalResteEnvoyer); echo $grandtotalresteenvoyer;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Différence</td>
-                                                <td><?php echo $totalprochaineenvoi-$totalcommande;?></td>
+                                                <td><?php echo $grandtotalresteenvoyer+$totalokchip-$totalcommande;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Pourcentage</td>
-                                                <td><?php echo round(($totalprochaineenvoi/$totalcommande)*100) ; ?>%</td>
+                                                <td><?php echo round((($grandtotalresteenvoyer+$totalokchip)/$totalcommande)*100) ; ?>%</td>
                                             </tr>
                                     
                                         </tbody>
@@ -1055,6 +1179,7 @@ if (mysqli_num_rows($result) > 0) {
                         </div>
                     </div>
                </div>
+               <?php }?>
                 </div>
             </div>
     <?php } ?>
