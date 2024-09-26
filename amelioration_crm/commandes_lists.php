@@ -63,7 +63,6 @@
     </div>
     <div class="container mt-4">
         <h1 class="text-center">Listes des réferences commandes par client</h1>
-        
         <!-- Table HTML -->
         <table id="data" class="table table-striped" style="width:100%">
             <thead>
@@ -84,7 +83,7 @@
                         <td><?php   echo mb_convert_encoding($row['RefCde'], 'UTF-8', 'ISO-8859-1') ; ?></td>
                       
                         <td>
-                            <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>&&collection=<?php echo $row['NomCollect'] ?>">
+                            <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>&&collection=<?php echo $row['NomCollect'] ?>" >
                                 <button class="btn btn-info">Suivi</button>
                             </a>
                         </td>
@@ -99,6 +98,7 @@
     
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>

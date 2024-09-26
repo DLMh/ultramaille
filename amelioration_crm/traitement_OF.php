@@ -401,7 +401,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                     <!-- Première ligne pour l'opération -->
                                                     <tr class="operation-row" data-operation="<?php echo $operation; ?>">
                                                         <?php $Total=0 ?>
-                                                        <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1'); ?></td>
+                                                        <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8'); ?></td>
                                                         <!-- Affiche le nom de l'opération -->
                                                         <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
                                                         <?php foreach ($tailles as $taille => $values) { ?>
@@ -576,7 +576,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                     <div class="col-md-6 mb-4">   
                         <div class="card">   
                             <div class="card-body">
-                                <?php  $resteEnvoyerArray = [];$tabtotalResteEnvoyer=[]; ?>
+                            <?php  $resteEnvoyerArray = []; $tabtotalResteEnvoyer=[]; ?>
                             <?php if(isset($dataByCouleur)):?>    
                                 <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
                                     <table class="table table-bordered">
@@ -592,6 +592,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                     <th  style="text-align: center;"><?php echo $taille; ?></th> <!-- Affiche la taille -->
                                                 <?php endforeach; ?>
                                                 <th>TOTAL</th>
+                                               
                                             </tr>
                                         
                                         </thead>
@@ -607,6 +608,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                     <?php endforeach; ?>
                                                 <?php endforeach; ?>
                                                 <td><?php echo $totalQte; ?></td>
+                                            
                                             </tr>
 
                                             <!-- Ligne pour OK PROD -->
@@ -622,14 +624,18 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                             value="<?php echo $details['okprod']; ?>" 
                                                             data-idcomdet="<?php echo $idcomdet; ?>"  
                                                             onchange="updateOkProd(this)" 
+                                                            class="form-control"
+                                                            style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
                                                         />
+                                                    
                                                         </td>
                                                         <?php $totalOkProd += $details['okprod']; ?>
                                                     <?php endforeach; ?>
                                                 <?php endforeach; ?>
                                                 <td><?php echo $totalOkProd; ?></td>
+     
                                             </tr>
-
+                                            
                                                         <!-- Ligne pour "Reste à envoyer" -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
@@ -691,6 +697,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                     <?php endforeach; ?>
                                                 <?php endforeach; ?>
                                                 <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
+                                               
                                             </tr>
                                             <tr>
                                                 <td>Pourcentage</td>
@@ -707,15 +714,65 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                     <?php endforeach; ?>
                                                 <?php endforeach; ?>
                                                 <td><?php echo round((($totalOkProd+$totalResteEnvoyer)/$totalQte)*100); ?>%</td>
+                                              
                                             </tr>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <tr>
+                                                        <td colspan="<?php echo count($tailles) + 2; ?>" style="text-align: center;">
+                                                            <button 
+                                                                class="btn btn-outline-secondary rounded-0" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
+                                                            >
+                                                                Envoi dépôt pour la taille <?php echo $taille; ?>
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                    
+
+                                                    <!-- Modal HTML -->
+                                                    <div class="modal fade" id="envoieDepotModal<?php echo $idcomdet; ?>" tabindex="-1" aria-labelledby="envoieDepotModalLabel<?php echo $idcomdet; ?>" aria-hidden="true">
+                                                        <div class="modal-dialog">
+                                                            <div class="modal-content">
+                                                                <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
+                                                                    <div class="modal-header">
+                                                                        <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
+                                                                            Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
+                                                                        </h5>
+                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <!-- Contenu du modal -->
+                                                                        <h3>Taille : <?php echo $taille; ?></h3>
+                                                                        <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
+                                                                        <input type="hidden" name="taille" value="<?php echo $taille; ?>">
+                                                                        <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
+                                                                        <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
+                                                                        <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
+                                                                    </div>
+                                                                    <div class="modal-footer">
+                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                        <button type="button" class="btn btn-primary" onclick="submitDepot(<?php echo $idcomdet; ?>)">Confirmer</button>
+                                                                    </div>
+                                                                </form>
+                                                                <!-- Message d'erreur ou de succès -->
+                                                                <div id="result<?php echo $idcomdet; ?>"></div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
                                         </tbody>
                                     </table>
+                                    
                                 <?php endforeach; ?>
                             <?php endif; ?>
                             </div>
                         </div>
                     </div>
-                      
+
                 </div>
                 <?php  if(!empty($donnee)):?>
                     <div class="row">
@@ -757,6 +814,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
         
    
     </div>    
+
     <?php } else { ?>
         <!-- debut  -->
     <?php
@@ -837,7 +895,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <!-- Première ligne pour l'opération -->
                                                 <tr class="operation-row" data-operation="<?php echo $operation; ?>" >
                                                     <?php $Total=0 ?>
-                                                    <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1'); ?></td> <!-- Affiche le nom de l'opération -->
+                                                    <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8'); ?></td> <!-- Affiche le nom de l'opération -->
                                                     <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
                                                     <?php foreach ($tailles as $taille => $values) { ?>
                                                         <td><?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
@@ -1046,10 +1104,13 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                     <?php foreach ($idcomdets as $idcomdet => $details): ?>
                                                         <td>
                                                         <input 
+                                                            
                                                             type="number" 
                                                             value="<?php echo $details['okprod']; ?>" 
                                                             data-idcomdet="<?php echo $idcomdet; ?>"  
                                                             onchange="updateOkProd(this)" 
+                                                            class="form-control"
+                                                            style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
                                                         />
                                                         </td>
                                                         <?php $totalOkProd += $details['okprod']; ?>
@@ -1214,16 +1275,16 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    $('.operation-toggle').change(function() {
-        var operation = $(this).val();
-        if ($(this).is(':checked')) {
-            $('tr[data-operation="' + operation + '"]').show();
-        } else {
-            $('tr[data-operation="' + operation + '"]').hide();
-        }
+    $(document).ready(function() {
+        $('.operation-toggle').change(function() {
+            var operation = $(this).val();
+            if ($(this).is(':checked')) {
+                $('tr[data-operation="' + operation + '"]').show();
+            } else {
+                $('tr[data-operation="' + operation + '"]').hide();
+            }
+        });
     });
-});
 </script>
 
 <!-- Bootstrap JS -->
@@ -1271,21 +1332,26 @@ $(document).ready(function() {
     xhr.send(params); // Envoie les données au serveur
 }
 
-
+</script>
+<!-- Script pour gérer l'action de confirmation -->
+<script>
+function submitDepot(idcomdet) {
+    var formId = '#depotForm' + idcomdet;  // Formulaire spécifique pour chaque modal
+    var resultId = '#result' + idcomdet;   // Div pour afficher le résultat
+    
+    $.ajax({
+        url: 'insert_depot.php',  // Fichier PHP qui va traiter la requête
+        type: 'POST',
+        data: $(formId).serialize(),   // Sérialiser les données du formulaire
+        success: function(response) {
+            $(resultId).html('<div class="alert alert-success">Données insérées avec succès !</div>');
+            $(formId)[0].reset();  // Réinitialise le formulaire après l'envoi
+        },
+        error: function() {
+            $(resultId).html('<div class="alert alert-danger">Erreur lors de l\'insertion des données.</div>');
+        }
+    });
+}
 </script>
 </body>
 </html>
-
-      <!-- Affichage des résultats avec plusieurs OF -->
-        <!-- <?php foreach ($operation_values as $operation => $colors) { ?>
-            <?php foreach ($colors as $couleur => $totals) { ?>
-            <p>
-                Nom opération: <?php echo $operation; ?><br>
-                Couleur: <?php echo $couleur; ?><br>
-                Finis1: <?php echo $totals['finis1']; ?><br>
-                Finis2: <?php echo $totals['finis2']; ?><br>
-                Retouches: <?php echo $totals['retouches']; ?><br>
-                Tailles: <?php echo implode('/ ', $totals['tailles']); ?><br>
-            </p>
-            <?php } ?>
-        <?php } ?> -->
