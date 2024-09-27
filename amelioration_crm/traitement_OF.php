@@ -5,23 +5,7 @@
  include("../../admin/databases/db_to_mysql.php");
  include("./comparaison.php");
 
-//  // Couleurs à comparer
-// $colorGPAO = "Camel";
-// $colorCRM = "Camel 2k";
-
-// // Normalisation des couleurs
-// $normalizedColorGPAO = normalizeColor($colorGPAO);
-// $normalizedColorCRM = normalizeColor($colorCRM);
-
-// // Vérification de la similarité
-// if (areColorsSimilar($normalizedColorGPAO, $normalizedColorCRM)) {
-//     $resul=areColorsSimilar($normalizedColorGPAO, $normalizedColorCRM);
-//     echo "Les couleurs sont considérées comme identiques.".$resul;
-// } else {
-//     echo "Les couleurs sont différentes.";
-// }
  
-
 // Vérification des paramètres GET
 if (isset($_GET['refcde'])) {
     $RefCde = urldecode($_GET['refcde']);
@@ -195,6 +179,22 @@ if ($var != 0) {
             </button>
         </a>
     </div>
+    <style>
+        /* Custom hover effect with transition */
+        .hover-depot {
+            transition: transform 0.4s ease-in-out, background-color 0.4s ease-in-out; /* Apply transition for transform and background-color */
+        }
+
+        .hover-depot:hover {
+            cursor: pointer;
+            transform: scale(1.1); /* Scale up on hover */
+            background-color: #DB8E81 !important; /* Change background color to red on hover */
+            color: white !important; /* Optional: Change text color to white for better contrast */
+        }
+        .bg-custom {
+            background-color: #AFBEDB !important; /* Custom background color */
+        }
+    </style>
     <!-- zone d'utilisation mysql -->
 <?php 
 // Requête SQL
@@ -230,9 +230,7 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
         echo "0 résultats pour qte commande";
     }
 
-            // Fermer la connexion
-            mysqli_close($conn);
-        ?>
+?>
         <?php if (!empty($donnees)) {
             $qte=0;$desc_ref=0;$desc_type=0;$numcde=0;$quantitesParTaille = array();$okprodParTaille= array();$idcomdet=0;$idcomdetParTaille= array();$idcomdetParCouleur= array();
             
@@ -312,13 +310,28 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
             if (!isset($dataByCouleur[$desc_coul][$desc_taille][$idcomdet])) {
                 $dataByCouleur[$desc_coul][$desc_taille][$idcomdet] = [
                     'qte' => 0,
-                    'okprod' => 0
+                    'okprod' => 0,
+                    'depots' => [] // Pour stocker les infos des dépôts
                 ]; // Initialiser l'idcomdet
             }
 
             // Ajouter les informations pour cette couleur, taille et idcomdet
             $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['qte'] = (int)$qte;
             $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['okprod'] = (int)$okprod;
+            $sql1 = "SELECT id,desc_coul,qte_depot,desc_taille,idcomdet,nom_depot FROM `depot_packing` WHERE idcomdet=".$donnee['idcomdet'];     
+            $resultat = mysqli_query($conn, $sql1);
+            if (mysqli_num_rows($resultat) > 0) {
+                while ($row = mysqli_fetch_assoc($resultat)) {
+                    $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][] = [
+                        'qte_depot'    => $row["qte_depot"],
+                        'nom_depot'  => $row["nom_depot"],
+                        'id'  => $row["id"],
+                        'desc_taille' => $row["desc_taille"],                                                         
+                        'idcomdet'=> $row["idcomdet"],
+                        'desc_coul'       => $row["desc_coul"]
+                    ];
+                }
+            }
         }
     }
 ?>
@@ -573,10 +586,11 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
 
                 </div>
                 <div class="row">
+                    
                     <div class="col-md-6 mb-4">   
                         <div class="card">   
                             <div class="card-body">
-                            <?php  $resteEnvoyerArray = []; $tabtotalResteEnvoyer=[]; ?>
+                            <?php  $resteEnvoyerArray = []; $tabtotalResteEnvoyer=[];  ?>
                             <?php if(isset($dataByCouleur)):?>    
                                 <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
                                     <table class="table table-bordered">
@@ -635,8 +649,47 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <td><?php echo $totalOkProd; ?></td>
      
                                             </tr>
-                                            
-                                                        <!-- Ligne pour "Reste à envoyer" -->
+                                            <!-- Affichage pour les dépôts (chaque dépôt dans une nouvelle ligne) -->
+                                             
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php if (!empty($details['depots'])): ?>
+                                                        <?php foreach ($details['depots'] as $depot): ?>
+                                                            <?php $totaldepot=0; ?>
+                                                            <tr>
+                                                                <!-- Situation column will be empty for these rows -->
+                                                                <td class="text-dark bg-custom  hover-depot"><?php echo $depot['nom_depot'] ?></td> 
+                                                                
+                                                                <!-- Parcourir chaque taille -->
+                                                                <?php foreach ($tailles as $currentTaille => $idcomdetsForCurrentTaille): ?>
+                                                                    <!-- Si la taille actuelle correspond à celle du dépôt -->
+                                                                    <?php if ($taille === $currentTaille): ?>
+                                                                        <td><?php echo $depot['qte_depot']; ?></td> <!-- Affiche la quantité du dépôt -->
+                                                                        <?php $totaldepot+=$depot['qte_depot'];?>
+                                                                    <?php else: ?>
+                                                                        <td>0</td> <!-- Laisser vide si aucune donnée pour cette taille -->
+                                                                    <?php endif; ?>
+                                                                <?php endforeach; ?>
+
+                                                                <!-- Dernière colonne vide pour TOTAL -->
+                                                                <td><?php echo $totaldepot ; ?></td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <!-- Si aucun dépôt n'est trouvé, on laisse vide les lignes correspondantes -->
+                                                        <tr>
+                                                            <td></td>
+                                                            <?php foreach ($tailles as $currentTaille => $idcomdetsForCurrentTaille): ?>
+                                                                <td></td> <!-- Cellule vide pour chaque taille -->
+                                                            <?php endforeach; ?>
+                                                            <td></td> <!-- Cellule vide pour le total -->
+                                                        </tr>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+
+
+                                        <!-- Ligne pour "Reste à envoyer" -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
                                                 <?php $totalResteEnvoyer = 0;?>
@@ -716,54 +769,54 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <td><?php echo round((($totalOkProd+$totalResteEnvoyer)/$totalQte)*100); ?>%</td>
                                               
                                             </tr>
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <tr>
-                                                        <td colspan="<?php echo count($tailles) + 2; ?>" style="text-align: center;">
-                                                            <button 
-                                                                class="btn btn-outline-secondary rounded-0" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
-                                                            >
-                                                                Envoi dépôt pour la taille <?php echo $taille; ?>
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                    
-
-                                                    <!-- Modal HTML -->
-                                                    <div class="modal fade" id="envoieDepotModal<?php echo $idcomdet; ?>" tabindex="-1" aria-labelledby="envoieDepotModalLabel<?php echo $idcomdet; ?>" aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
-                                                                            Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
-                                                                        </h5>
-                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                            <tr>
+                                                <td colspan="<?php echo count($tailles) + 2; ?>" style="text-align: center;">
+                                                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                                                        <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                            <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                                <button 
+                                                                    class="btn btn-outline-secondary rounded-0" 
+                                                                    data-bs-toggle="modal" 
+                                                                    data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
+                                                                >
+                                                                    Envoi dépôt pour la taille <?php echo $taille; ?>
+                                                                </button>
+                                                                
+                                                                <!-- Modal HTML -->
+                                                                <div class="modal fade" id="envoieDepotModal<?php echo $idcomdet; ?>" tabindex="-1" aria-labelledby="envoieDepotModalLabel<?php echo $idcomdet; ?>" aria-hidden="true">
+                                                                    <div class="modal-dialog">
+                                                                        <div class="modal-content">
+                                                                            <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
+                                                                                <div class="modal-header">
+                                                                                    <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
+                                                                                        Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
+                                                                                    </h5>
+                                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                                                </div>
+                                                                                <div class="modal-body">
+                                                                                    <h3>Taille : <?php echo $taille; ?></h3>
+                                                                                    <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
+                                                                                    <input type="hidden" name="taille" value="<?php echo $taille; ?>">
+                                                                                    <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
+                                                                                    <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
+                                                                                    <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
+                                                                                </div>
+                                                                                <div class="modal-footer">
+                                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                                    <button type="button" class="btn btn-primary" onclick="submitDepot(<?php echo $idcomdet; ?>)">Confirmer</button>
+                                                                                </div>
+                                                                            </form>
+                                                                            <!-- Message d'erreur ou de succès -->
+                                                                            <div id="result<?php echo $idcomdet; ?>"></div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div class="modal-body">
-                                                                        <!-- Contenu du modal -->
-                                                                        <h3>Taille : <?php echo $taille; ?></h3>
-                                                                        <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
-                                                                        <input type="hidden" name="taille" value="<?php echo $taille; ?>">
-                                                                        <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
-                                                                        <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
-                                                                        <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                                        <button type="button" class="btn btn-primary" onclick="submitDepot(<?php echo $idcomdet; ?>)">Confirmer</button>
-                                                                    </div>
-                                                                </form>
-                                                                <!-- Message d'erreur ou de succès -->
-                                                                <div id="result<?php echo $idcomdet; ?>"></div>
-                                                            </div>
-                                                        </div>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php endforeach; ?>
                                                     </div>
+                                                </td>
+                                            </tr>
 
-                                                <?php endforeach; ?>
-                                            <?php endforeach; ?>
                                         </tbody>
                                     </table>
                                     
@@ -812,7 +865,9 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
             </div>
             <!-- fin -->
         
-   
+   <?php   // Fermer la connexion
+        mysqli_close($conn);
+    ?>
     </div>    
 
     <?php } else { ?>
@@ -1118,7 +1173,37 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <?php endforeach; ?>
                                                 <td><?php echo $totalOkProd; ?></td>
                                             </tr>
+                                            <!-- Affichage pour les dépôts (chaque dépôt dans une nouvelle ligne) -->                                            
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php if (!empty($details['depots'])): ?>
+                                                        <?php foreach ($details['depots'] as $depot): ?>
+                                                            <?php $totaldepot=0; ?>
+                                                            <tr>
+                                                                <!-- Situation column will be empty for these rows -->
+                                                                <td class="text-dark bg-custom  hover-depot"><?php echo $depot['nom_depot'] ?></td> 
+                                                                
+                                                                <!-- Parcourir chaque taille -->
+                                                                <?php foreach ($tailles as $currentTaille => $idcomdetsForCurrentTaille): ?>
+                                                                    <!-- Si la taille actuelle correspond à celle du dépôt -->
+                                                                    <?php if ($taille === $currentTaille): ?>
+                                                                        <td><?php echo $depot['qte_depot']; ?></td> <!-- Affiche la quantité du dépôt -->
+                                                                        <?php $totaldepot+=$depot['qte_depot'];?>
+                                                                    <?php else: ?>
+                                                                        <td>0</td> <!-- Laisser vide si aucune donnée pour cette taille -->
+                                                                    <?php endif; ?>
+                                                                <?php endforeach; ?>
 
+                                                                <!-- Dernière colonne vide pour TOTAL -->
+                                                                <td><?php echo $totaldepot ; ?></td>
+                                                            </tr>
+                                                        <?php endforeach; ?>
+                                                    <?php else: ?>
+                                                        <!-- Si aucun dépôt n'est trouvé, on laisse vide les lignes correspondantes -->
+                                                       
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
                                             <!-- Ligne pour Reste à envoyer -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
@@ -1197,6 +1282,54 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                         
                                             <td><?php echo round((($totalOkProd+$totalResteEnvoyer)/$totalQte)*100); ?>%</td>
                                         </tr>
+                                        <tr>
+                                                <td colspan="<?php echo count($tailles) + 2; ?>" style="text-align: center;">
+                                                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                                                        <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                            <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                                <button 
+                                                                    class="btn btn-outline-secondary rounded-0" 
+                                                                     data-bs-toggle="modal" 
+                                                                    data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
+                                                                >
+                                                                    Envoi dépôt pour la taille <?php echo $taille; ?>
+                                                                </button>
+                                                                
+                                                                <!-- Modal HTML -->
+                                                                <div class="modal fade" id="envoieDepotModal<?php echo $idcomdet; ?>" tabindex="-1" aria-labelledby="envoieDepotModalLabel<?php echo $idcomdet; ?>" aria-hidden="true">
+                                                                    <div class="modal-dialog">
+                                                                        <div class="modal-content">
+                                                                            <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
+                                                                                <div class="modal-header">
+                                                                                    <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
+                                                                                        Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
+                                                                                    </h5>
+                                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                                                </div>
+                                                                                <div class="modal-body">
+                                                                                    <h3>Taille : <?php echo $taille; ?></h3>
+                                                                                    <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
+                                                                                    <input type="hidden" name="taille" value="<?php echo $taille; ?>">
+                                                                                    <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
+                                                                                    <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
+                                                                                    <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
+                                                                                </div>
+                                                                                <div class="modal-footer">
+                                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                                    <button type="button" class="btn btn-primary" onclick="submitDepot(<?php echo $idcomdet; ?>)">Confirmer</button>
+                                                                                </div>
+                                                                            </form>
+                                                                            <!-- Message d'erreur ou de succès -->
+                                                                            <div id="result<?php echo $idcomdet; ?>"></div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </td>
+                                            </tr>
+
                                         </tbody>
                                     </table>
                                 <?php endforeach; ?>
@@ -1335,23 +1468,24 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
 </script>
 <!-- Script pour gérer l'action de confirmation -->
 <script>
-function submitDepot(idcomdet) {
-    var formId = '#depotForm' + idcomdet;  // Formulaire spécifique pour chaque modal
-    var resultId = '#result' + idcomdet;   // Div pour afficher le résultat
-    
-    $.ajax({
-        url: 'insert_depot.php',  // Fichier PHP qui va traiter la requête
-        type: 'POST',
-        data: $(formId).serialize(),   // Sérialiser les données du formulaire
-        success: function(response) {
-            $(resultId).html('<div class="alert alert-success">Données insérées avec succès !</div>');
-            $(formId)[0].reset();  // Réinitialise le formulaire après l'envoi
-        },
-        error: function() {
-            $(resultId).html('<div class="alert alert-danger">Erreur lors de l\'insertion des données.</div>');
-        }
-    });
-}
+    function submitDepot(idcomdet) {
+        var formId = '#depotForm' + idcomdet;  // Formulaire spécifique pour chaque modal
+        var resultId = '#result' + idcomdet;   // Div pour afficher le résultat
+        
+        $.ajax({
+            url: 'insert_depot.php',  // Fichier PHP qui va traiter la requête
+            type: 'POST',
+            data: $(formId).serialize(),   // Sérialiser les données du formulaire
+            success: function(response) {
+                $(resultId).html('<div class="alert alert-success">Données insérées avec succès !</div>');
+                $(formId)[0].reset();  // Réinitialise le formulaire après l'envoi
+                location.reload(); 
+            },
+            error: function() {
+                $(resultId).html('<div class="alert alert-danger">Erreur lors de l\'insertion des données.</div>');
+            }
+        });
+    }
 </script>
 </body>
 </html>

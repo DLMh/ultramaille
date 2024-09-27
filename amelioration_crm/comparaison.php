@@ -38,21 +38,4 @@ function normalizeSize($size) {
     return strtolower(trim($size)); // Convertir en minuscule et supprimer les espaces en trop
 }
 
-// function normalizeColor($color) {
-//     $color = strtolower($color); // Convertir en minuscule
-//     $color = preg_replace('/[^a-z\s]+/', '', $color); // Supprimer tout sauf les lettres et espaces
-//     $words = explode(' ', trim($color)); // Diviser la couleur en mots
-//     return $words[0]; // Retourner le premier mot, souvent la couleur principale
-// }
-
-// // Fonction pour vérifier si deux couleurs sont similaires
-// function areColorsSimilar($color1, $color2, $threshold = 70) {
-//     similar_text($color1, $color2, $similarity);
-//     return $similarity >= $threshold;
-// }
-
-// // Fonction de normalisation pour les tailles
-// function normalizeSize($size) {
-//     return strtolower(trim($size)); // Convertir en minuscule et supprimer les espaces en trop
-// }
 ?>
