@@ -274,66 +274,80 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
 }
 ?>
 <?php
-    if(!empty($donnees))
-    {
-        $dataByCouleur = [];
-        $totalcommande=0;
-        $totalokchip=0;
-        $totalprochaineenvoi=0;
-      
+    
+if (!empty($donnees)) {
+    $dataByCouleur = [];
+    $totalcommande = 0;
+    $totalokchip = 0;
+    $totalprochaineenvoi = 0;
 
-        foreach ($donnees as $donnee) {
-            $desc_type = $donnee['desc_type'];
-            $numcde = $donnee['numcde'];
-            $desc_ref = $donnee['desc_ref'];
-            $desc_taille = $donnee['desc_taille'];
-            $okprod = $donnee['ok_prod'];
-            $qte = $donnee['qte'];
-            $idcomdet = $donnee['idcomdet'];
-            $desc_coul = $donnee['desc_coul'];
-            $totalcommande+=$donnee['qte'];
-            $totalokchip+=$donnee['ok_prod'];
-            
+    foreach ($donnees as $donnee) {
+        $desc_type = $donnee['desc_type'];
+        $numcde = $donnee['numcde'];
+        $desc_ref = $donnee['desc_ref'];
+        $desc_taille = $donnee['desc_taille'];
+        $okprod = $donnee['ok_prod'];
+        $qte = $donnee['qte'];
+        $idcomdet = $donnee['idcomdet'];
+        $desc_coul = $donnee['desc_coul'];
+        $totalcommande += $donnee['qte'];
+        $totalokchip += $donnee['ok_prod'];
 
+        // Vérifier si la couleur est déjà dans le tableau
+        if (!isset($dataByCouleur[$desc_coul])) {
+            $dataByCouleur[$desc_coul] = []; // Initialiser la couleur
+        }
 
-            // Vérifier si la couleur est déjà dans le tableau
-            if (!isset($dataByCouleur[$desc_coul])) {
-                $dataByCouleur[$desc_coul] = []; // Initialiser la couleur
-            }
+        // Vérifier si la taille est déjà dans la couleur
+        if (!isset($dataByCouleur[$desc_coul][$desc_taille])) {
+            $dataByCouleur[$desc_coul][$desc_taille] = []; // Initialiser la taille pour la couleur
+        }
 
-            // Vérifier si la taille est déjà dans la couleur
-            if (!isset($dataByCouleur[$desc_coul][$desc_taille])) {
-                $dataByCouleur[$desc_coul][$desc_taille] = []; // Initialiser la taille pour la couleur
-            }
+        // Vérifier si l'idcomdet est déjà dans la taille
+        if (!isset($dataByCouleur[$desc_coul][$desc_taille][$idcomdet])) {
+            $dataByCouleur[$desc_coul][$desc_taille][$idcomdet] = [
+                'qte' => 0,
+                'okprod' => 0,
+                'depots' => [] // Pour stocker les infos des dépôts par nom_depot
+            ]; // Initialiser l'idcomdet
+        }
 
-            // Vérifier si l'idcomdet est déjà dans la taille
-            if (!isset($dataByCouleur[$desc_coul][$desc_taille][$idcomdet])) {
-                $dataByCouleur[$desc_coul][$desc_taille][$idcomdet] = [
-                    'qte' => 0,
-                    'okprod' => 0,
-                    'depots' => [] // Pour stocker les infos des dépôts
-                ]; // Initialiser l'idcomdet
-            }
+        // Ajouter les informations pour cette couleur, taille et idcomdet
+        $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['qte'] = (int)$qte;
+        $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['okprod'] = (int)$okprod;
 
-            // Ajouter les informations pour cette couleur, taille et idcomdet
-            $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['qte'] = (int)$qte;
-            $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['okprod'] = (int)$okprod;
-            $sql1 = "SELECT id,desc_coul,qte_depot,desc_taille,idcomdet,nom_depot FROM `depot_packing` WHERE idcomdet=".$donnee['idcomdet'];     
-            $resultat = mysqli_query($conn, $sql1);
-            if (mysqli_num_rows($resultat) > 0) {
-                while ($row = mysqli_fetch_assoc($resultat)) {
-                    $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][] = [
-                        'qte_depot'    => $row["qte_depot"],
-                        'nom_depot'  => $row["nom_depot"],
-                        'id'  => $row["id"],
-                        'desc_taille' => $row["desc_taille"],                                                         
-                        'idcomdet'=> $row["idcomdet"],
-                        'desc_coul'       => $row["desc_coul"]
-                    ];
+        // Requête pour récupérer les informations des dépôts
+        $sql1 = "SELECT id, desc_coul, qte_depot, desc_taille, idcomdet, nom_depot 
+                 FROM depot_packing WHERE idcomdet=" . $donnee['idcomdet'];     
+        $resultat = mysqli_query($conn, $sql1);
+
+        if (mysqli_num_rows($resultat) > 0) {
+            while ($row = mysqli_fetch_assoc($resultat)) {
+                $nomDepot = $row['nom_depot'];
+                $qteDepot = (int)$row['qte_depot'];
+
+                // Vérifier si le dépôt existe déjà pour cette taille et idcomdet
+                if (!isset($dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][$nomDepot])) {
+                    $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][$nomDepot] = [
+                        'nom_depot' => $nomDepot,
+                        'tailles' => []
+                    ]; // Initialiser le dépôt
                 }
+
+                // Ajouter la quantité par taille sous le dépôt
+                if (!isset($dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][$nomDepot]['tailles'][$row['desc_taille']])) {
+                    $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][$nomDepot]['tailles'][$row['desc_taille']] = 0;
+                }
+
+                // Accumuler les quantités pour cette taille dans le dépôt
+                $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][$nomDepot]['tailles'][$row['desc_taille']] += $qteDepot;
             }
         }
     }
+
+    
+}
+
 ?>
      <!-- fin zone -->
     <!-- si une seule OF -->
@@ -593,46 +607,40 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                             <?php  $resteEnvoyerArray = []; $tabtotalResteEnvoyer=[];  ?>
                             <?php if(isset($dataByCouleur)):?>    
                                 <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
-                                    <table class="table table-bordered">
-                                        <thead>
-                                            <tr>
-                                                <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
-                                            </tr>
-                                            <tr>
-                                                <th>Situation</th>
-                                                
-                                                <!-- Afficher les colonnes de taille et idcomdet pour chaque taille -->
-                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                    <th  style="text-align: center;"><?php echo $taille; ?></th> <!-- Affiche la taille -->
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
+                                        </tr>
+                                        <tr>
+                                            <th>Situation</th>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <th style="text-align: center;"><?php echo $taille; ?></th> <!-- Affiche la taille -->
+                                            <?php endforeach; ?>
+                                            <th>TOTAL</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Ligne pour Qte Commande -->
+                                        <tr>
+                                            <td>Qte Commande</td>
+                                            <?php $totalQte = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <td><?php echo $details['qte']; ?></td>
+                                                    <?php $totalQte += $details['qte']; ?>
                                                 <?php endforeach; ?>
-                                                <th>TOTAL</th>
-                                               
-                                            </tr>
-                                        
-                                        </thead>
-                                        <tbody>
-                                            <!-- Ligne pour Qte Commande -->
-                                            <tr>
-                                                <td>Qte Commande</td>
-                                                <?php $totalQte = 0; ?>
-                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                        <td><?php echo $details['qte']; ?></td>
-                                                        <?php $totalQte += $details['qte']; ?>
-                                                    <?php endforeach; ?>
-                                                <?php endforeach; ?>
-                                                <td><?php echo $totalQte; ?></td>
-                                            
-                                            </tr>
+                                            <?php endforeach; ?>
+                                            <td><?php echo $totalQte; ?></td>
+                                        </tr>
 
-                                            <!-- Ligne pour OK PROD -->
-                                            <tr>
-                                                <td>OK SHIP</td>
-                                                
-                                                <?php $totalOkProd = 0; ?>
-                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                        <td>
+                                        <!-- Ligne pour OK PROD -->
+                                        <tr>
+                                            <td>OK SHIP</td>
+                                            <?php $totalOkProd = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <td>
                                                         <input 
                                                             type="number" 
                                                             value="<?php echo $details['okprod']; ?>" 
@@ -641,58 +649,60 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                             class="form-control"
                                                             style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
                                                         />
-                                                    
-                                                        </td>
-                                                        <?php $totalOkProd += $details['okprod']; ?>
-                                                    <?php endforeach; ?>
-                                                <?php endforeach; ?>
-                                                <td><?php echo $totalOkProd; ?></td>
-     
-                                            </tr>
-                                            <!-- Affichage pour les dépôts (chaque dépôt dans une nouvelle ligne) -->
-                                             
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php if (!empty($details['depots'])): ?>
-                                                        <?php foreach ($details['depots'] as $depot): ?>
-                                                            <?php $totaldepot=0; ?>
-                                                            <tr>
-                                                                <!-- Situation column will be empty for these rows -->
-                                                                <td class="text-dark bg-custom  hover-depot"><?php echo $depot['nom_depot'] ?></td> 
-                                                                
-                                                                <!-- Parcourir chaque taille -->
-                                                                <?php foreach ($tailles as $currentTaille => $idcomdetsForCurrentTaille): ?>
-                                                                    <!-- Si la taille actuelle correspond à celle du dépôt -->
-                                                                    <?php if ($taille === $currentTaille): ?>
-                                                                        <td><?php echo $depot['qte_depot']; ?></td> <!-- Affiche la quantité du dépôt -->
-                                                                        <?php $totaldepot+=$depot['qte_depot'];?>
-                                                                    <?php else: ?>
-                                                                        <td>0</td> <!-- Laisser vide si aucune donnée pour cette taille -->
-                                                                    <?php endif; ?>
-                                                                <?php endforeach; ?>
-
-                                                                <!-- Dernière colonne vide pour TOTAL -->
-                                                                <td><?php echo $totaldepot ; ?></td>
-                                                            </tr>
-                                                        <?php endforeach; ?>
-                                                    <?php else: ?>
-                                                        <!-- Si aucun dépôt n'est trouvé, on laisse vide les lignes correspondantes -->
-                                                        <tr>
-                                                            <td></td>
-                                                            <?php foreach ($tailles as $currentTaille => $idcomdetsForCurrentTaille): ?>
-                                                                <td></td> <!-- Cellule vide pour chaque taille -->
-                                                            <?php endforeach; ?>
-                                                            <td></td> <!-- Cellule vide pour le total -->
-                                                        </tr>
-                                                    <?php endif; ?>
+                                                    </td>
+                                                    <?php $totalOkProd += $details['okprod']; ?>
                                                 <?php endforeach; ?>
                                             <?php endforeach; ?>
+                                            <td><?php echo $totalOkProd; ?></td>
+                                        </tr>
 
+                                        <!-- Affichage des dépôts regroupés par nom_depot -->
+                                        <?php
+                                        // Regrouper les dépôts par nom_depot
+                                        $depotsGrouped = [];
+                                        $totaldepot = 0;
+
+                                        foreach ($tailles as $taille => $idcomdets) {
+                                            foreach ($idcomdets as $idcomdet => $details) {
+                                                if (!empty($details['depots'])) {
+                                                    foreach ($details['depots'] as $depot) {
+                                                        // Utilisez la clé correcte pour accéder à la quantité des dépôts
+                                                        if (isset($depot['tailles'][$taille])) {
+                                                            $qteDepot = $depot['tailles'][$taille];
+                                                            // Regrouper les quantités par nom_depot et taille
+                                                            $depotsGrouped[$depot['nom_depot']][$taille] = $qteDepot;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Afficher les dépôts groupés
+                                        
+                                        foreach ($depotsGrouped as $nomDepot => $depotData): ?>
+                                            <tr>
+                                                <td class="text-dark bg-custom hover-depot"><?php echo $nomDepot; ?></td> <!-- Nom du dépôt -->
+
+                                                <!-- Afficher les quantités par taille -->
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <td>
+                                                        <?php echo isset($depotData[$taille]) ? $depotData[$taille] : 0; ?> <!-- Affiche la quantité du dépôt pour cette taille ou 0 s'il n'y a rien -->
+                                                    </td>
+                                                <?php endforeach; ?>
+
+                                                <!-- Total des quantités envoyées pour ce dépôt -->
+                                                <td><?php echo array_sum($depotData); ?></td>
+                                                 <?php $totaldepot += array_sum($depotData); ?>
+                                                
+                                            </tr>
+                                            
+                                        <?php endforeach; ?>
+                                        
 
                                         <!-- Ligne pour "Reste à envoyer" -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
-                                                <?php $totalResteEnvoyer = 0;?>
+                                                <?php $totalResteEnvoyer = 0; ?>
                                                 <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                     <?php foreach ($idcomdets as $idcomdet => $details): ?>
                                                         <?php
@@ -723,7 +733,18 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                                 break;
                                                             }
                                                         }
-                                                        $resteEnvoyer = $packingValue - $details['okprod'];
+                                                        // Calculer la somme des quantités envoyées aux dépôts pour la taille en cours
+                                                        $sommeQuantitesDepot = 0;
+                                                        if (isset($depotsGrouped)) {
+                                                            foreach ($depotsGrouped as $nomDepot => $depotData) {
+                                                                if (isset($depotData[$taille])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // Calcul du "Reste à envoyer" avec soustraction de la somme des dépôts
+                                                        $resteEnvoyer = $packingValue - $details['okprod'] - $sommeQuantitesDepot;
                                                         $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
 
                                                         // Affichage de la valeur "Reste à envoyer" (celle de "Entrée Packing" si trouvé)
@@ -733,93 +754,116 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                     <?php endforeach; ?>
                                                 <?php endforeach; ?>
                                                 <td><?php echo $totalResteEnvoyer; ?></td> <!-- Total des "Reste à envoyer" -->
-                                                <?php $tabtotalResteEnvoyer[]= $totalResteEnvoyer; // Ajouter au total global ?>
-                                            </tr>
-                                            <tr>
-                                                <td>Différence</td>
-                                                <?php $differenceTotal = 0; ?>
-                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                        <?php 
-                                                        $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
-                                                        $difference = ($resteenvoie + $details['okprod']) - $details['qte']; 
-                                                        
-                                                        ?>
-                                                        <td><?php echo $difference; ?></td>
-                                                        <?php $differenceTotal += $difference; ?>
-                                                    <?php endforeach; ?>
-                                                <?php endforeach; ?>
-                                                <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
-                                               
-                                            </tr>
-                                            <tr>
-                                                <td>Pourcentage</td>
-                                                <?php $pourcentage = 0; ?>
-                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                        <?php 
-                                                            $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
-                                                            $pourcentage = (($resteenvoie + $details['okprod'])/$details['qte'])*100; 
-                                                            
-                                                        ?>
-                                                        <td><?php echo round($pourcentage); ?>%</td>
-                                                        
-                                                    <?php endforeach; ?>
-                                                <?php endforeach; ?>
-                                                <td><?php echo round((($totalOkProd+$totalResteEnvoyer)/$totalQte)*100); ?>%</td>
-                                              
-                                            </tr>
-                                            <tr>
-                                                <td colspan="<?php echo count($tailles) + 2; ?>" style="text-align: center;">
-                                                    <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-                                                        <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                            <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                                <button 
-                                                                    class="btn btn-outline-secondary rounded-0" 
-                                                                    data-bs-toggle="modal" 
-                                                                    data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
-                                                                >
-                                                                    Envoi dépôt pour la taille <?php echo $taille; ?>
-                                                                </button>
-                                                                
-                                                                <!-- Modal HTML -->
-                                                                <div class="modal fade" id="envoieDepotModal<?php echo $idcomdet; ?>" tabindex="-1" aria-labelledby="envoieDepotModalLabel<?php echo $idcomdet; ?>" aria-hidden="true">
-                                                                    <div class="modal-dialog">
-                                                                        <div class="modal-content">
-                                                                            <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
-                                                                                <div class="modal-header">
-                                                                                    <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
-                                                                                        Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
-                                                                                    </h5>
-                                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                                                                                </div>
-                                                                                <div class="modal-body">
-                                                                                    <h3>Taille : <?php echo $taille; ?></h3>
-                                                                                    <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
-                                                                                    <input type="hidden" name="taille" value="<?php echo $taille; ?>">
-                                                                                    <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
-                                                                                    <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
-                                                                                    <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
-                                                                                </div>
-                                                                                <div class="modal-footer">
-                                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                                                                                    <button type="button" class="btn btn-primary" onclick="submitDepot(<?php echo $idcomdet; ?>)">Confirmer</button>
-                                                                                </div>
-                                                                            </form>
-                                                                            <!-- Message d'erreur ou de succès -->
-                                                                            <div id="result<?php echo $idcomdet; ?>"></div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            <?php endforeach; ?>
-                                                        <?php endforeach; ?>
-                                                    </div>
-                                                </td>
+                                                 <?php $tabtotalResteEnvoyer[]= $totalResteEnvoyer; // Ajouter au total global ?>
                                             </tr>
 
-                                        </tbody>
-                                    </table>
-                                    
+                                        <!-- Ligne pour Différence -->
+                                        <tr>
+                                            <td>Différence</td>
+                                            <?php $differenceTotal = 0; ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    
+                                                     <?php 
+                                                            // Calcul de la somme des quantités envoyées aux dépôts pour la taille en cours
+                                                            $sommeQuantitesDepot = 0;
+                                                            if (isset($depotsGrouped)) {
+                                                                foreach ($depotsGrouped as $nomDepot => $depotData) {
+                                                                    if (isset($depotData[$taille])) {
+                                                                        $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            // Obtenir la valeur de "reste à envoyer"
+                                                            $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
+
+                                                            // Calcul de la différence, en incluant la somme des quantités envoyées aux dépôts
+                                                            $difference = ($resteenvoie + $details['okprod'] + $sommeQuantitesDepot) - $details['qte']; 
+                                                        ?>
+                                                    <td><?php echo $difference; ?></td>
+                                                    <?php $differenceTotal += $difference; ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
+                                        </tr>
+
+                                        <!-- Ligne pour Pourcentage -->
+                                        <tr>
+                                            <td>Pourcentage</td>
+                                            <?php $pourcentageTotal = 0;  ?>
+                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                    <?php
+                                                     // Calcul de la somme des quantités envoyées aux dépôts pour la taille en cours
+                                                        $sommeQuantitesDepot = 0;
+                                                        if (isset($depotsGrouped)) {
+                                                            foreach ($depotsGrouped as $nomDepot => $depotData) {
+                                                                if (isset($depotData[$taille])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                }
+                                                            }
+                                                        }
+                                                    $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
+                                                    $pourcentage = (($resteenvoie + $details['okprod']+$sommeQuantitesDepot)/$details['qte'])*100; 
+                                                    echo '<td>' . round($pourcentage) . '%</td>';
+                                                    ?>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                            <?php 
+                                                $totalPourcentage = (($totalOkProd + $totaldepot + $totalResteEnvoyer) / $totalQte) * 100;
+                                            ?>
+                                            <td><?php echo round($totalPourcentage); ?>%</td> <!-- Affiche le pourcentage total -->
+                                        </tr>
+                                        <tr>
+                                            <td colspan="<?php echo count($tailles) + 2; ?>" style="text-align: center;">
+                                                <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                                                    <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                        <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                            <button 
+                                                                class="btn btn-outline-secondary rounded-0" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
+                                                            >
+                                                                Dépot packing list <?php echo $taille?>
+                                                            </button>
+                                                            
+                                                            <!-- Modal HTML -->
+                                                            <div class="modal fade" id="envoieDepotModal<?php echo $idcomdet; ?>" tabindex="-1" aria-labelledby="envoieDepotModalLabel<?php echo $idcomdet; ?>" aria-hidden="true">
+                                                                <div class="modal-dialog">
+                                                                    <div class="modal-content">
+                                                                        <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
+                                                                            <div class="modal-header">
+                                                                                <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
+                                                                                    Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
+                                                                                </h5>
+                                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                                            </div>
+                                                                            <div class="modal-body">
+                                                                                <h3>Taille : <?php echo $taille; ?></h3>
+                                                                                <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
+                                                                                <input type="hidden" name="taille" value="<?php echo $taille; ?>">
+                                                                                <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
+                                                                                <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
+                                                                                <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
+                                                                            </div>
+                                                                            <div class="modal-footer">
+                                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                                <button type="button" class="btn btn-primary" onclick="submitDepot(<?php echo $idcomdet; ?>)">Confirmer</button>
+                                                                            </div>
+                                                                        </form>
+                                                                        <!-- Message d'erreur ou de succès -->
+                                                                        <div id="result<?php echo $idcomdet; ?>"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <?php endforeach; ?>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>                      
                                 <?php endforeach; ?>
                             <?php endif; ?>
                             </div>
@@ -832,6 +876,29 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                     <div class="col mb-4">
                         <div class="card">
                             <div class="card-body">
+                                <?php 
+                                    $totalDepots = []; 
+                                    $sommeTotalDepot = 0; 
+
+                                    foreach ($dataByCouleur as $couleur => $tailleData) {
+                                        foreach ($tailleData as $taille => $idcomdetData) {
+                                            foreach ($idcomdetData as $idcomdet => $details) {
+                                                foreach ($details['depots'] as $nomDepot => $depotDetails) {
+                                                   
+                                                    $qteTotalDepot = array_sum($depotDetails['tailles']);
+
+                                                   
+                                                    if (!isset($totalDepots[$nomDepot])) {
+                                                        $totalDepots[$nomDepot] = 0; 
+                                                    }
+                                                    $totalDepots[$nomDepot] += $qteTotalDepot;
+                                                 
+                                                    $sommeTotalDepot += $qteTotalDepot;
+                                                }
+                                            }
+                                        }
+                                    }
+                                ?>
                                     <table class="table table-bordered">
                                         <tbody>
                                             <tr>
@@ -842,17 +909,24 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <td>OK CHIP</td>
                                                 <td><?php echo $totalokchip; ?></td>
                                             </tr>
+                                             <!-- New row for depot totals -->
+                                            <?php foreach ($totalDepots as $nomDepot => $qteTotalDepot): ?>
+                                            <tr>
+                                                <td><?php echo  $nomDepot; ?></td>
+                                                <td><?php echo $qteTotalDepot; ?></td>
+                                            </tr>
+                                            <?php endforeach; ?>
                                             <tr>
                                                 <td>Reste à envoyer</td>
                                                 <td><?php $grandtotalresteenvoyer= array_sum($tabtotalResteEnvoyer); echo $grandtotalresteenvoyer;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Différence</td>
-                                                <td><?php echo $grandtotalresteenvoyer+$totalokchip-$totalcommande;?></td>
+                                                <td><?php echo $grandtotalresteenvoyer+$totalokchip+ $sommeTotalDepot-$totalcommande;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Pourcentage</td>
-                                                <td><?php echo round((($grandtotalresteenvoyer+$totalokchip)/$totalcommande)*100) ; ?>%</td>
+                                                <td><?php echo round((($grandtotalresteenvoyer+$totalokchip+$sommeTotalDepot)/$totalcommande)*100) ; ?>%</td>
                                             </tr>
                                     
                                         </tbody>
@@ -1173,37 +1247,47 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <?php endforeach; ?>
                                                 <td><?php echo $totalOkProd; ?></td>
                                             </tr>
-                                            <!-- Affichage pour les dépôts (chaque dépôt dans une nouvelle ligne) -->                                            
-                                            <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php if (!empty($details['depots'])): ?>
-                                                        <?php foreach ($details['depots'] as $depot): ?>
-                                                            <?php $totaldepot=0; ?>
-                                                            <tr>
-                                                                <!-- Situation column will be empty for these rows -->
-                                                                <td class="text-dark bg-custom  hover-depot"><?php echo $depot['nom_depot'] ?></td> 
-                                                                
-                                                                <!-- Parcourir chaque taille -->
-                                                                <?php foreach ($tailles as $currentTaille => $idcomdetsForCurrentTaille): ?>
-                                                                    <!-- Si la taille actuelle correspond à celle du dépôt -->
-                                                                    <?php if ($taille === $currentTaille): ?>
-                                                                        <td><?php echo $depot['qte_depot']; ?></td> <!-- Affiche la quantité du dépôt -->
-                                                                        <?php $totaldepot+=$depot['qte_depot'];?>
-                                                                    <?php else: ?>
-                                                                        <td>0</td> <!-- Laisser vide si aucune donnée pour cette taille -->
-                                                                    <?php endif; ?>
-                                                                <?php endforeach; ?>
+                                           <?php
+                                            // Regrouper les dépôts par nom_depot
+                                            $depotsGrouped = [];
+                                            $totaldepot = 0;
 
-                                                                <!-- Dernière colonne vide pour TOTAL -->
-                                                                <td><?php echo $totaldepot ; ?></td>
-                                                            </tr>
-                                                        <?php endforeach; ?>
-                                                    <?php else: ?>
-                                                        <!-- Si aucun dépôt n'est trouvé, on laisse vide les lignes correspondantes -->
-                                                       
-                                                    <?php endif; ?>
-                                                <?php endforeach; ?>
+                                            foreach ($tailles as $taille => $idcomdets) {
+                                                foreach ($idcomdets as $idcomdet => $details) {
+                                                    if (!empty($details['depots'])) {
+                                                        foreach ($details['depots'] as $depot) {
+                                                            // Utilisez la clé correcte pour accéder à la quantité des dépôts
+                                                            if (isset($depot['tailles'][$taille])) {
+                                                                $qteDepot = $depot['tailles'][$taille];
+                                                                // Regrouper les quantités par nom_depot et taille
+                                                                $depotsGrouped[$depot['nom_depot']][$taille] = $qteDepot;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            // Afficher les dépôts groupés
+                                            
+                                            foreach ($depotsGrouped as $nomDepot => $depotData): ?>
+                                                <tr>
+                                                    <td class="text-dark bg-custom hover-depot"><?php echo $nomDepot; ?></td> <!-- Nom du dépôt -->
+
+                                                    <!-- Afficher les quantités par taille -->
+                                                    <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                        <td>
+                                                            <?php echo isset($depotData[$taille]) ? $depotData[$taille] : 0; ?> <!-- Affiche la quantité du dépôt pour cette taille ou 0 s'il n'y a rien -->
+                                                        </td>
+                                                    <?php endforeach; ?>
+
+                                                    <!-- Total des quantités envoyées pour ce dépôt -->
+                                                    <td><?php echo array_sum($depotData); ?></td>
+                                                    <?php $totaldepot += array_sum($depotData); ?>
+                                                    
+                                                </tr>
+                                                
                                             <?php endforeach; ?>
+                                        
                                             <!-- Ligne pour Reste à envoyer -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
@@ -1238,7 +1322,18 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                                 break;
                                                             }
                                                         }
-                                                          $resteEnvoyer = $packingValue - $details['okprod'];
+                                                        // Calculer la somme des quantités envoyées aux dépôts pour la taille en cours
+                                                        $sommeQuantitesDepot = 0;
+                                                        if (isset($depotsGrouped)) {
+                                                            foreach ($depotsGrouped as $nomDepot => $depotData) {
+                                                                if (isset($depotData[$taille])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // Calcul du "Reste à envoyer" avec soustraction de la somme des dépôts
+                                                        $resteEnvoyer = $packingValue - $details['okprod'] - $sommeQuantitesDepot;
                                                         $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
 
                                                         // Affichage de la valeur "Reste à envoyer" (celle de "Entrée Packing" si trouvé)
@@ -1250,37 +1345,62 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <td><?php echo $totalResteEnvoyer; ?></td> <!-- Total des "Reste à envoyer" -->
                                                  <?php $tabtotalResteEnvoyer[]= $totalResteEnvoyer; // Ajouter au total global ?>
                                             </tr>
-                                            <tr>
+                                     <tr>
                                             <td>Différence</td>
                                             <?php $differenceTotal = 0; ?>
                                             <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                 <?php foreach ($idcomdets as $idcomdet => $details): ?>
                                                     
-                                                    <?php 
+                                                     <?php 
+                                                            // Calcul de la somme des quantités envoyées aux dépôts pour la taille en cours
+                                                            $sommeQuantitesDepot = 0;
+                                                            if (isset($depotsGrouped)) {
+                                                                foreach ($depotsGrouped as $nomDepot => $depotData) {
+                                                                    if (isset($depotData[$taille])) {
+                                                                        $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            // Obtenir la valeur de "reste à envoyer"
                                                             $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
-                                                            $difference = ($resteenvoie + $details['okprod']) - $details['qte']; 
-                                                    ?>
+
+                                                            // Calcul de la différence, en incluant la somme des quantités envoyées aux dépôts
+                                                            $difference = ($resteenvoie + $details['okprod'] + $sommeQuantitesDepot) - $details['qte']; 
+                                                        ?>
                                                     <td><?php echo $difference; ?></td>
                                                     <?php $differenceTotal += $difference; ?>
                                                 <?php endforeach; ?>
                                             <?php endforeach; ?>
                                             <td><?php echo $differenceTotal; ?></td> <!-- Affiche le total des différences -->
                                         </tr>
+
+                                        <!-- Ligne pour Pourcentage -->
                                         <tr>
                                             <td>Pourcentage</td>
-                                            <?php $resteTotal = 0; ?>
+                                            <?php $pourcentageTotal = 0;  ?>
                                             <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                 <?php foreach ($idcomdets as $idcomdet => $details): ?>
-                                                    <?php 
-                                                        $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
-                                                        $pourcentage = (($resteenvoie + $details['okprod'])/$details['qte'])*100; 
+                                                    <?php
+                                                     // Calcul de la somme des quantités envoyées aux dépôts pour la taille en cours
+                                                        $sommeQuantitesDepot = 0;
+                                                        if (isset($depotsGrouped)) {
+                                                            foreach ($depotsGrouped as $nomDepot => $depotData) {
+                                                                if (isset($depotData[$taille])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                }
+                                                            }
+                                                        }
+                                                    $resteenvoie = isset($resteEnvoyerArray[$taille][$idcomdet]) ? $resteEnvoyerArray[$taille][$idcomdet] : 0;
+                                                    $pourcentage = (($resteenvoie + $details['okprod']+$sommeQuantitesDepot)/$details['qte'])*100; 
+                                                    echo '<td>' . round($pourcentage) . '%</td>';
                                                     ?>
-                                                    <td><?php echo $pourcentage; ?>%</td>
-                                                    
                                                 <?php endforeach; ?>
                                             <?php endforeach; ?>
-                                        
-                                            <td><?php echo round((($totalOkProd+$totalResteEnvoyer)/$totalQte)*100); ?>%</td>
+                                            <?php 
+                                                $totalPourcentage = (($totalOkProd + $totaldepot + $totalResteEnvoyer) / $totalQte) * 100;
+                                            ?>
+                                            <td><?php echo round($totalPourcentage); ?>%</td> <!-- Affiche le pourcentage total -->
                                         </tr>
                                         <tr>
                                                 <td colspan="<?php echo count($tailles) + 2; ?>" style="text-align: center;">
@@ -1344,7 +1464,30 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                     <div class="col mb-4">
                         <div class="card">
                             <div class="card-body">
-                                    <table class="table table-bordered">
+                                    <?php 
+                                    $totalDepots = []; 
+                                    $sommeTotalDepot = 0; 
+
+                                    foreach ($dataByCouleur as $couleur => $tailleData) {
+                                        foreach ($tailleData as $taille => $idcomdetData) {
+                                            foreach ($idcomdetData as $idcomdet => $details) {
+                                                foreach ($details['depots'] as $nomDepot => $depotDetails) {
+                                                   
+                                                    $qteTotalDepot = array_sum($depotDetails['tailles']);
+
+                                                   
+                                                    if (!isset($totalDepots[$nomDepot])) {
+                                                        $totalDepots[$nomDepot] = 0; 
+                                                    }
+                                                    $totalDepots[$nomDepot] += $qteTotalDepot;
+                                                 
+                                                    $sommeTotalDepot += $qteTotalDepot;
+                                                }
+                                            }
+                                        }
+                                    }
+                                ?>
+                                         <table class="table table-bordered">
                                         <tbody>
                                             <tr>
                                                 <td>Total Commande</td>
@@ -1354,17 +1497,24 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                                                 <td>OK CHIP</td>
                                                 <td><?php echo $totalokchip; ?></td>
                                             </tr>
+                                             <!-- New row for depot totals -->
+                                            <?php foreach ($totalDepots as $nomDepot => $qteTotalDepot): ?>
+                                            <tr>
+                                                <td><?php echo  $nomDepot; ?></td>
+                                                <td><?php echo $qteTotalDepot; ?></td>
+                                            </tr>
+                                            <?php endforeach; ?>
                                             <tr>
                                                 <td>Reste à envoyer</td>
                                                 <td><?php $grandtotalresteenvoyer= array_sum($tabtotalResteEnvoyer); echo $grandtotalresteenvoyer;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Différence</td>
-                                                <td><?php echo $grandtotalresteenvoyer+$totalokchip-$totalcommande;?></td>
+                                                <td><?php echo $grandtotalresteenvoyer+$totalokchip+ $sommeTotalDepot-$totalcommande;?></td>
                                             </tr>
                                             <tr>
                                                 <td>Pourcentage</td>
-                                                <td><?php echo round((($grandtotalresteenvoyer+$totalokchip)/$totalcommande)*100) ; ?>%</td>
+                                                <td><?php echo round((($grandtotalresteenvoyer+$totalokchip+$sommeTotalDepot)/$totalcommande)*100) ; ?>%</td>
                                             </tr>
                                     
                                         </tbody>
