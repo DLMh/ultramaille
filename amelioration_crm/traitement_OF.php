@@ -201,7 +201,7 @@ if ($var != 0) {
 $totalqte=0;
 $totalokprod=0;
 if($RefCRM!='VIDE' && $RefCRM!==''){
-    $sql = "SELECT desc_type,numcde,desc_ref,qte,desc_taille,ok_prod,idcomdet,desc_coul FROM `commande_mvt` WHERE idcom=".$RefCRM." and (desc_type='".$RefCde."' OR desc_ref='".$RefCde."')";
+    $sql = "SELECT desc_type,numcde,desc_ref,qte,desc_taille,ok_prod,idcomdet,desc_coul,nom_ok_prod FROM `commande_mvt` WHERE idcom=".$RefCRM." and (desc_type='".$RefCde."' OR desc_ref='".$RefCde."')";
     // var_dump($sql);
     $result = mysqli_query($conn, $sql);
 
@@ -222,7 +222,8 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                 'ok_prod' => $row["ok_prod"],
                 'idcomdet'=> $row["idcomdet"],
                 'qte'       => $row["qte"],
-                'desc_coul'       => $row["desc_coul"]
+                'desc_coul'       => $row["desc_coul"],
+                'nomokprod'       => $row["nom_ok_prod"]
 
             ];
         }
@@ -232,7 +233,8 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
 
 ?>
         <?php if (!empty($donnees)) {
-            $qte=0;$desc_ref=0;$desc_type=0;$numcde=0;$quantitesParTaille = array();$okprodParTaille= array();$idcomdet=0;$idcomdetParTaille= array();$idcomdetParCouleur= array();
+            $qte=0;$desc_ref=0;$desc_type=0;$numcde=0;$quantitesParTaille = array();$okprodParTaille= array();
+            $idcomdet=0;$idcomdetParTaille= array();
             
             foreach ($donnees as $donnee) {
                 $desc_type=$donnee['desc_type'] ;
@@ -243,6 +245,8 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
                 $qte=$donnee['qte'] ;
                 $idcomdet=$donnee['idcomdet'];
                 $desc_coul = $donnee['desc_coul']; 
+                
+
                 // Vérifier si la taille est déjà dans le tableau
                 if (!isset($quantitesParTaille[$desc_taille])) {
                     $quantitesParTaille[$desc_taille] = 0; // Initialiser la quantité pour cette taille
@@ -292,6 +296,7 @@ if (!empty($donnees)) {
         $desc_coul = $donnee['desc_coul'];
         $totalcommande += $donnee['qte'];
         $totalokchip += $donnee['ok_prod'];
+        $nomokprod = $donnee['nomokprod']; 
 
         // Vérifier si la couleur est déjà dans le tableau
         if (!isset($dataByCouleur[$desc_coul])) {
@@ -308,6 +313,7 @@ if (!empty($donnees)) {
             $dataByCouleur[$desc_coul][$desc_taille][$idcomdet] = [
                 'qte' => 0,
                 'okprod' => 0,
+                'nomokprod' => '',
                 'depots' => [] // Pour stocker les infos des dépôts par nom_depot
             ]; // Initialiser l'idcomdet
         }
@@ -315,6 +321,7 @@ if (!empty($donnees)) {
         // Ajouter les informations pour cette couleur, taille et idcomdet
         $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['qte'] = (int)$qte;
         $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['okprod'] = (int)$okprod;
+        $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['nomokprod'] = $nomokprod;
 
         // Requête pour récupérer les informations des dépôts
         $sql1 = "SELECT id, desc_coul, qte_depot, desc_taille, idcomdet, nom_depot 
@@ -325,13 +332,15 @@ if (!empty($donnees)) {
             while ($row = mysqli_fetch_assoc($resultat)) {
                 $nomDepot = $row['nom_depot'];
                 $qteDepot = (int)$row['qte_depot'];
+                $iddepot=$row['id'];
 
                 // Vérifier si le dépôt existe déjà pour cette taille et idcomdet
                 if (!isset($dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][$nomDepot])) {
                     $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['depots'][$nomDepot] = [
                         'nom_depot' => $nomDepot,
+                        'iddepot' => $iddepot, 
                         'tailles' => []
-                    ]; // Initialiser le dépôt
+                    ]; 
                 }
 
                 // Ajouter la quantité par taille sous le dépôt
@@ -372,7 +381,6 @@ if (!empty($donnees)) {
         <?php
             $grouped_by_color = [];
             $finis1_total = 0;
-            // var_dump($singleOFValues['Entrée Packing']['IVORY']['S']['finis1']);
 
             // Regrouper les opérations par couleur et taille
             foreach ($singleOFValues as $operation => $colors) {
@@ -634,9 +642,43 @@ if (!empty($donnees)) {
                                             <td><?php echo $totalQte; ?></td>
                                         </tr>
 
-                                        <!-- Ligne pour OK PROD -->
+                                        <!-- Ligne pour OK Chip  -->
                                         <tr>
-                                            <td>OK SHIP</td>
+                                            <td>
+                                                <?php 
+                                                    $idcomdetList = '';                                                     
+                                                    $nomokprodValue = ''; 
+                                                ?>
+
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                        <?php 
+                                                        // Stocker le nomokprod pour un idcomdet (assumant qu'il est identique pour chaque taille)
+                                                        $nomokprodValue = $details['nomokprod'];
+
+                                                        // Ajouter l'idcomdet à la liste
+                                                        if ($idcomdetList != '') {
+                                                            $idcomdetList .= ', ';
+                                                        }
+                                                        $idcomdetList .= $idcomdet;
+                                                        ?>
+                                                    <?php endforeach; ?>
+                                                <?php endforeach; ?>
+
+                                                <!-- Champ modifiable pour nomokprod -->
+                                                   <textarea 
+                                                        rows="2" 
+                                                        style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;" 
+                                                        data-idcomdet="<?php echo $idcomdetList; ?>" 
+                                                        onblur="updateNomOkProd(this)" 
+                                                        class="form-control"
+                                                        >
+                                                        <?php echo $nomokprodValue; ?>
+                                                    </textarea>
+                                            </td>
+
+
+
                                             <?php $totalOkProd = 0; ?>
                                             <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                 <?php foreach ($idcomdets as $idcomdet => $details): ?>
@@ -670,7 +712,10 @@ if (!empty($donnees)) {
                                                         if (isset($depot['tailles'][$taille])) {
                                                             $qteDepot = $depot['tailles'][$taille];
                                                             // Regrouper les quantités par nom_depot et taille
-                                                            $depotsGrouped[$depot['nom_depot']][$taille] = $qteDepot;
+                                                             $depotsGrouped[$depot['nom_depot']][$taille] = [
+                                                                'qteDepot' => $qteDepot,
+                                                                'iddepot' => $depot['iddepot']
+                                                            ];
                                                         }
                                                     }
                                                 }
@@ -680,19 +725,67 @@ if (!empty($donnees)) {
                                         // Afficher les dépôts groupés
                                         
                                         foreach ($depotsGrouped as $nomDepot => $depotData): ?>
+                                            <?php $modalId = preg_replace('/[^a-zA-Z0-9_-]/', '', $nomDepot . '-' . uniqid()); ?>
                                             <tr>
-                                                <td class="text-dark bg-custom hover-depot"><?php echo $nomDepot; ?></td> <!-- Nom du dépôt -->
+                                                
+                                               <td class="text-dark bg-custom hover-depot" style="cursor:pointer;" data-toggle="modal" data-target="#confirmDeleteModal-<?php echo $modalId; ?>">
+                                                    <?php 
+                                                        $idDepots = [];
+                                                        foreach ($depotData as $tailleData) {
+                                                            if (isset($tailleData['iddepot'])) {
+                                                                $idDepots[] = $tailleData['iddepot']; 
+                                                            }
+                                                        }
+                                                        $idDepotsString = !empty($idDepots) ? implode(', ', $idDepots) : 'N/A'; 
+                                                    ?>
+                                                    <span data-iddepot="<?php echo implode(',', $idDepots); ?>">
+                                                        <?php echo $nomDepot; ?> 
+                                                    </span>
+                                                </td>
 
-                                                <!-- Afficher les quantités par taille -->
+                                                <!-- Modal de confirmation avant la suppression -->
+                                                <div class="modal fade" id="confirmDeleteModal-<?php echo $modalId; ?>" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel-<?php echo $modalId; ?>" aria-hidden="true">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="confirmDeleteModalLabel-<?php echo $modalId; ?>">Confirmation de la suppression</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>Êtes-vous sûr de vouloir supprimer les dépôts suivants ?</p>
+                                                                <p><strong>Dépôt:</strong> <?php echo $nomDepot; ?></p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                <button type="button" class="btn btn-danger confirmDelete" data-iddepot="<?php echo implode(',', $idDepots); ?>" data-modalid="<?php echo $modalId; ?>">Confirmer la suppression</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
                                                 <?php foreach ($tailles as $taille => $idcomdets): ?>
                                                     <td>
-                                                        <?php echo isset($depotData[$taille]) ? $depotData[$taille] : 0; ?> <!-- Affiche la quantité du dépôt pour cette taille ou 0 s'il n'y a rien -->
+                                                        <?php if (isset($depotData[$taille])): ?>
+                                                            <?php if (isset($depotData[$taille]['qteDepot'])): ?>
+                                                                <input type="number" 
+                                                                    class="form-control qte-depot" 
+                                                                    data-iddepot="<?php echo isset($depotData[$taille]['iddepot']) ? $depotData[$taille]['iddepot'] : 'N/A'; ?>" 
+                                                                    value="<?php echo $depotData[$taille]['qteDepot']; ?>" 
+                                                                    min="0"
+                                                                    style="width: 100%;">
+                                                            <?php else: ?>
+                                                                N/A 
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            N/A
+                                                        <?php endif; ?>
+                                                      
                                                     </td>
                                                 <?php endforeach; ?>
 
                                                 <!-- Total des quantités envoyées pour ce dépôt -->
-                                                <td><?php echo array_sum($depotData); ?></td>
-                                                 <?php $totaldepot += array_sum($depotData); ?>
+                                                <td><?php echo array_sum(array_column($depotData, 'qteDepot')); ?></td>
+                                                <?php $totaldepot += array_sum(array_column($depotData, 'qteDepot')); ?>
                                                 
                                             </tr>
                                             
@@ -737,8 +830,8 @@ if (!empty($donnees)) {
                                                         $sommeQuantitesDepot = 0;
                                                         if (isset($depotsGrouped)) {
                                                             foreach ($depotsGrouped as $nomDepot => $depotData) {
-                                                                if (isset($depotData[$taille])) {
-                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                if (isset($depotData[$taille]['qteDepot'])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]['qteDepot']; // Ajouter la quantité envoyée pour cette taille
                                                                 }
                                                             }
                                                         }
@@ -769,8 +862,8 @@ if (!empty($donnees)) {
                                                             $sommeQuantitesDepot = 0;
                                                             if (isset($depotsGrouped)) {
                                                                 foreach ($depotsGrouped as $nomDepot => $depotData) {
-                                                                    if (isset($depotData[$taille])) {
-                                                                        $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                    if (isset($depotData[$taille]['qteDepot'])) {
+                                                                        $sommeQuantitesDepot += $depotData[$taille]['qteDepot']; // Ajouter la quantité envoyée pour cette taille
                                                                     }
                                                                 }
                                                             }
@@ -799,8 +892,8 @@ if (!empty($donnees)) {
                                                         $sommeQuantitesDepot = 0;
                                                         if (isset($depotsGrouped)) {
                                                             foreach ($depotsGrouped as $nomDepot => $depotData) {
-                                                                if (isset($depotData[$taille])) {
-                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                if (isset($depotData[$taille]['qteDepot'])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]['qteDepot']; // Ajouter la quantité envoyée pour cette taille
                                                                 }
                                                             }
                                                         }
@@ -825,7 +918,7 @@ if (!empty($donnees)) {
                                                                 data-bs-toggle="modal" 
                                                                 data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
                                                             >
-                                                                Dépot packing list <?php echo $taille?>
+                                                                Dépôt packing list <?php echo $taille?>
                                                             </button>
                                                             
                                                             <!-- Modal HTML -->
@@ -960,20 +1053,7 @@ if (!empty($donnees)) {
         }
     ?>
 
-    <!-- <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
-        <h3 class="text-info">Couleur: <?php echo $couleur; ?></h3>
-        <?php foreach ($operations as $operation => $tailles) { ?>
-            <h4 class="text-warning">Nom opération: <?php echo $operation; ?></h4>
-            <?php foreach ($tailles as $taille => $totals) { ?>
-                <p>
-                    Taille: <?php echo $taille; ?><br>
-                    Finis1: <?php echo $totals['finis1']; ?><br>
-                    Finis2: <?php echo $totals['finis2']; ?><br>
-                    Retouches: <?php echo $totals['retouches']; ?><br>
-                </p>
-            <?php } ?>
-        <?php } ?>
-    <?php } ?> -->
+    
 
   <div class="container mt-5">
   
@@ -1226,7 +1306,39 @@ if (!empty($donnees)) {
 
                                             <!-- Ligne pour OK PROD -->
                                             <tr>
-                                                <td>OK SHIP</td>
+                                                <td>
+                                                    <?php 
+                                                        $idcomdetList = '';                                                     
+                                                        $nomokprodValue = ''; 
+                                                    ?>
+
+                                                    <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                        <?php foreach ($idcomdets as $idcomdet => $details): ?>
+                                                            <?php 
+                                                            // Stocker le nomokprod pour un idcomdet (assumant qu'il est identique pour chaque taille)
+                                                            $nomokprodValue = $details['nomokprod'];
+
+                                                            // Ajouter l'idcomdet à la liste
+                                                            if ($idcomdetList != '') {
+                                                                $idcomdetList .= ', ';
+                                                            }
+                                                            $idcomdetList .= $idcomdet;
+                                                            ?>
+                                                        <?php endforeach; ?>
+                                                    <?php endforeach; ?>
+
+                                                    <!-- Champ modifiable pour nomokprod -->
+                                                   <textarea 
+                                                        rows="2" 
+                                                        style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;" 
+                                                        data-idcomdet="<?php echo $idcomdetList; ?>" 
+                                                        onblur="updateNomOkProd(this)" 
+                                                        class="form-control"
+                                                        >
+                                                        <?php echo $nomokprodValue; ?>
+                                                    </textarea>
+
+                                            </td>
                                                 
                                                 <?php $totalOkProd = 0; ?>
                                                 <?php foreach ($tailles as $taille => $idcomdets): ?>
@@ -1260,34 +1372,82 @@ if (!empty($donnees)) {
                                                             if (isset($depot['tailles'][$taille])) {
                                                                 $qteDepot = $depot['tailles'][$taille];
                                                                 // Regrouper les quantités par nom_depot et taille
-                                                                $depotsGrouped[$depot['nom_depot']][$taille] = $qteDepot;
+                                                                $depotsGrouped[$depot['nom_depot']][$taille] = [
+                                                                    'qteDepot' => $qteDepot,
+                                                                    'iddepot' => $depot['iddepot']
+                                                                ];
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
 
-                                            // Afficher les dépôts groupés
-                                            
                                             foreach ($depotsGrouped as $nomDepot => $depotData): ?>
-                                                <tr>
-                                                    <td class="text-dark bg-custom hover-depot"><?php echo $nomDepot; ?></td> <!-- Nom du dépôt -->
-
-                                                    <!-- Afficher les quantités par taille -->
-                                                    <?php foreach ($tailles as $taille => $idcomdets): ?>
-                                                        <td>
-                                                            <?php echo isset($depotData[$taille]) ? $depotData[$taille] : 0; ?> <!-- Affiche la quantité du dépôt pour cette taille ou 0 s'il n'y a rien -->
-                                                        </td>
-                                                    <?php endforeach; ?>
-
-                                                    <!-- Total des quantités envoyées pour ce dépôt -->
-                                                    <td><?php echo array_sum($depotData); ?></td>
-                                                    <?php $totaldepot += array_sum($depotData); ?>
-                                                    
-                                                </tr>
+                                            <?php $modalId = preg_replace('/[^a-zA-Z0-9_-]/', '', $nomDepot . '-' . uniqid()); ?>
+                                            <tr>
                                                 
+                                               <td class="text-dark bg-custom hover-depot" style="cursor:pointer;" data-toggle="modal" data-target="#confirmDeleteModal-<?php echo $modalId; ?>">
+                                                    <?php 
+                                                        $idDepots = [];
+                                                        foreach ($depotData as $tailleData) {
+                                                            if (isset($tailleData['iddepot'])) {
+                                                                $idDepots[] = $tailleData['iddepot']; 
+                                                            }
+                                                        }
+                                                        $idDepotsString = !empty($idDepots) ? implode(', ', $idDepots) : 'N/A'; 
+                                                    ?>
+                                                    <span data-iddepot="<?php echo implode(',', $idDepots); ?>">
+                                                        <?php echo $nomDepot; ?> 
+                                                    </span>
+                                                </td>
+
+                                                <!-- Modal de confirmation avant la suppression -->
+                                                <div class="modal fade" id="confirmDeleteModal-<?php echo $modalId; ?>" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel-<?php echo $modalId; ?>" aria-hidden="true">
+                                                    <div class="modal-dialog" role="document">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="confirmDeleteModalLabel-<?php echo $modalId; ?>">Confirmation de la suppression</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>Êtes-vous sûr de vouloir supprimer les dépôts suivants ?</p>
+                                                                <p><strong>Dépôt:</strong> <?php echo $nomDepot; ?></p>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                <button type="button" class="btn btn-danger confirmDelete" data-iddepot="<?php echo implode(',', $idDepots); ?>" data-modalid="<?php echo $modalId; ?>">Confirmer la suppression</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                    <td>
+                                                        <?php if (isset($depotData[$taille])): ?>
+                                                            <?php if (isset($depotData[$taille]['qteDepot'])): ?>
+                                                                <input type="number" 
+                                                                    class="form-control qte-depot" 
+                                                                    data-iddepot="<?php echo isset($depotData[$taille]['iddepot']) ? $depotData[$taille]['iddepot'] : 'N/A'; ?>" 
+                                                                    value="<?php echo $depotData[$taille]['qteDepot']; ?>" 
+                                                                    min="0"
+                                                                    style="width: 100%;">
+                                                            <?php else: ?>
+                                                                N/A 
+                                                            <?php endif; ?>
+                                                        <?php else: ?>
+                                                            N/A
+                                                        <?php endif; ?>
+                                                      
+                                                    </td>
+                                                <?php endforeach; ?>
+
+                                                <!-- Total des quantités envoyées pour ce dépôt -->
+                                                <td><?php echo array_sum(array_column($depotData, 'qteDepot')); ?></td>
+                                                <?php $totaldepot += array_sum(array_column($depotData, 'qteDepot')); ?>
+                                                
+                                            </tr>
+                                            
                                             <?php endforeach; ?>
-                                        
                                             <!-- Ligne pour Reste à envoyer -->
                                             <tr>
                                                 <td>Reste à envoyer</td>
@@ -1327,7 +1487,7 @@ if (!empty($donnees)) {
                                                         if (isset($depotsGrouped)) {
                                                             foreach ($depotsGrouped as $nomDepot => $depotData) {
                                                                 if (isset($depotData[$taille])) {
-                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                    $sommeQuantitesDepot += $depotData[$taille]['iddepot']; // Ajouter la quantité envoyée pour cette taille
                                                                 }
                                                             }
                                                         }
@@ -1357,7 +1517,7 @@ if (!empty($donnees)) {
                                                             if (isset($depotsGrouped)) {
                                                                 foreach ($depotsGrouped as $nomDepot => $depotData) {
                                                                     if (isset($depotData[$taille])) {
-                                                                        $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                        $sommeQuantitesDepot += $depotData[$taille]['iddepot']; // Ajouter la quantité envoyée pour cette taille
                                                                     }
                                                                 }
                                                             }
@@ -1387,7 +1547,7 @@ if (!empty($donnees)) {
                                                         if (isset($depotsGrouped)) {
                                                             foreach ($depotsGrouped as $nomDepot => $depotData) {
                                                                 if (isset($depotData[$taille])) {
-                                                                    $sommeQuantitesDepot += $depotData[$taille]; // Ajouter la quantité envoyée pour cette taille
+                                                                    $sommeQuantitesDepot += $depotData[$taille]['iddepot']; // Ajouter la quantité envoyée pour cette taille
                                                                 }
                                                             }
                                                         }
@@ -1579,44 +1739,44 @@ if (!empty($donnees)) {
 <script src="../general/assets/js/Dark-Mode-Switch-darkmode.js"></script>
 <script>
 
-  function updateOkProd(inputElement) {
-    var newValue = inputElement.value; // La nouvelle valeur modifiée
-    var idcomdet = inputElement.getAttribute('data-idcomdet'); // Récupérer l'ID associé
-    console.log(inputElement.value);
-    console.log(inputElement.getAttribute('data-idcomdet'));
-    
+    function updateOkProd(inputElement) {
+        var newValue = inputElement.value; // La nouvelle valeur modifiée
+        var idcomdet = inputElement.getAttribute('data-idcomdet'); // Récupérer l'ID associé
+        console.log(inputElement.value);
+        console.log(inputElement.getAttribute('data-idcomdet'));
+        
 
-    // Création de la requête AJAX
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'update_okprod.php', true);
-    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        // Création de la requête AJAX
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'update_okprod.php', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 
-    // Envoyer les paramètres : l'ID et la nouvelle valeur
-    var params = 'idcomdet=' + idcomdet + '&okprod=' + newValue;
+        // Envoyer les paramètres : l'ID et la nouvelle valeur
+        var params = 'idcomdet=' + idcomdet + '&okprod=' + newValue;
 
-    xhr.onload = function () {
-        if (xhr.status === 200) {
-            
-            console.log('Réponse brute du serveur:', xhr.responseText);
-            var response = JSON.parse(xhr.responseText);
-            if (response.status === 'success') {
+        xhr.onload = function () {
+            if (xhr.status === 200) {
                 
-                console.log('Mise à jour réussie');
-                 location.reload(); 
-               
+                console.log('Réponse brute du serveur:', xhr.responseText);
+                var response = JSON.parse(xhr.responseText);
+                if (response.status === 'success') {
+                    
+                    console.log('Mise à jour réussie');
+                    location.reload(); 
+                
+                } else {
+                    console.error('Erreur : ' + response.message);
+                }
             } else {
-                console.error('Erreur : ' + response.message);
+                console.error('Erreur AJAX');
             }
-        } else {
-            console.error('Erreur AJAX');
-        }
-    };
+        };
 
-    xhr.send(params); // Envoie les données au serveur
-}
+        xhr.send(params); // Envoie les données au serveur
+    }
 
 </script>
-<!-- Script pour gérer l'action de confirmation -->
+
 <script>
     function submitDepot(idcomdet) {
         var formId = '#depotForm' + idcomdet;  // Formulaire spécifique pour chaque modal
@@ -1637,5 +1797,86 @@ if (!empty($donnees)) {
         });
     }
 </script>
+<script>
+    document.querySelectorAll('.qte-depot').forEach(input => {
+        input.addEventListener('change', function() {
+            let iddepot = this.getAttribute('data-iddepot');  // Récupérer l'ID du dépôt
+            let newQte = this.value;  // Récupérer la nouvelle quantité
+
+            // Envoyer une requête AJAX pour mettre à jour la quantité
+            let xhr = new XMLHttpRequest();
+            xhr.open('POST', 'update_depot.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    console.log(xhr.responseText);  // Facultatif : afficher la réponse du serveur
+                    console.log('Quantité mise à jour avec succès.');
+                    location.reload(); 
+                }
+            };
+            xhr.send('iddepot=' + iddepot + '&qteDepot=' + newQte);  // Envoyer les données (ID et nouvelle quantité)
+        });
+    });
+</script>
+<script>
+    $(document).ready(function() {
+        // Ouvrir le modal avec les IDs du dépôt
+        $('body').on('click', 'td.hover-depot', function() {
+            var iddepot = $(this).find('span').data('iddepot');
+            var modalId = $(this).data('target');
+            
+            // Ouvrir le modal correspondant
+            $(modalId).data('iddepot', iddepot).modal('show');
+        });
+
+        // Gérer la suppression lors de la confirmation
+        $('body').on('click', '.confirmDelete', function() {
+            var iddepot = $(this).data('iddepot'); // Récupérer les IDs du dépôt à supprimer
+
+            // Appeler une fonction AJAX ou rediriger vers une page pour traiter la suppression
+            $.ajax({
+                url: 'supprimer_depots.php', // Le fichier PHP qui gère la suppression
+                type: 'POST',
+                data: { ids: iddepot }, // Envoyer les IDs à supprimer
+                success: function(response) {
+                    location.reload(); // Recharger la page pour voir les changements
+                },
+                error: function() {
+                    alert('Erreur lors de la suppression des dépôts.');
+                }
+            });
+        });
+    });
+
+</script>
+<script>
+    function updateNomOkProd(input) {
+        // Récupérer la valeur modifiée
+        var nomokprod = input.value;
+
+        // Récupérer les idcomdet associés (séparés par des virgules)
+        var idcomdetList = input.getAttribute('data-idcomdet');
+
+        // Envoyer la requête AJAX pour mettre à jour le nomokprod
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "update_nomokprod.php", true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        // Créer les données à envoyer (nomokprod et liste des idcomdet)
+        var data = "nomokprod=" + encodeURIComponent(nomokprod) + "&idcomdetList=" + encodeURIComponent(idcomdetList);
+
+        // Envoyer les données
+        xhr.send(data);
+
+        // Gérer la réponse (facultatif)
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                console.log("Nom OK Prod mis à jour avec succès");
+                location.reload();
+            }
+        };
+    }
+</script>
+
 </body>
 </html>
