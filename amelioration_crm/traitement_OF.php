@@ -188,7 +188,7 @@ if ($var != 0) {
         .hover-depot:hover {
             cursor: pointer;
             transform: scale(1.1); /* Scale up on hover */
-            background-color: #DB8E81 !important; /* Change background color to red on hover */
+            background-color: #FF0066 !important; /* Change background color to red on hover */
             color: white !important; /* Optional: Change text color to white for better contrast */
         }
         .bg-custom {
@@ -436,7 +436,7 @@ if (!empty($donnees)) {
                                                     <!-- Première ligne pour l'opération -->
                                                     <tr class="operation-row" data-operation="<?php echo $operation; ?>">
                                                         <?php $Total=0 ?>
-                                                        <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8'); ?></td>
+                                                        <td style="background-color: #80ef80;"><?php echo mb_convert_encoding($operation, 'UTF-8'); ?></td>
                                                         <!-- Affiche le nom de l'opération -->
                                                         <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
                                                         <?php foreach ($tailles as $taille => $values) { ?>
@@ -485,7 +485,7 @@ if (!empty($donnees)) {
                                                                 
                                                             ?>
                                                         <?php if($encours<0){?>
-                                                            <td style="background-color: red;"><?php echo $encours; ?></td>
+                                                            <td style="background-color: #FF0066;"><?php echo $encours; ?></td>
                                                         <?php }else {?>
 
                                                         <td> 
@@ -667,7 +667,7 @@ if (!empty($donnees)) {
 
                                                 <!-- Champ modifiable pour nomokprod -->
                                                    <textarea 
-                                                        rows="2" 
+                                                        rows="3" 
                                                         style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;" 
                                                         data-idcomdet="<?php echo $idcomdetList; ?>" 
                                                         onblur="updateNomOkProd(this)" 
@@ -928,7 +928,7 @@ if (!empty($donnees)) {
                                                                         <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
                                                                             <div class="modal-header">
                                                                                 <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
-                                                                                    Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
+                                                                                    Envoi dépôt pour la couleur <?php echo $couleur; ?> 
                                                                                 </h5>
                                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                                                                             </div>
@@ -1104,7 +1104,7 @@ if (!empty($donnees)) {
                                                 <!-- Première ligne pour l'opération -->
                                                 <tr class="operation-row" data-operation="<?php echo $operation; ?>" >
                                                     <?php $Total=0 ?>
-                                                    <td class="bg-info"><?php echo mb_convert_encoding($operation, 'UTF-8'); ?></td> <!-- Affiche le nom de l'opération -->
+                                                    <td style="background-color: #80ef80;"><?php echo mb_convert_encoding($operation, 'UTF-8'); ?></td> <!-- Affiche le nom de l'opération -->
                                                     <?php $op=mb_convert_encoding($operation, 'UTF-8', 'ISO-8859-1')?>
                                                     <?php foreach ($tailles as $taille => $values) { ?>
                                                         <td><?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
@@ -1151,7 +1151,7 @@ if (!empty($donnees)) {
                                                             
                                                         ?>
                                                         <?php if($encours<0){?>
-                                                            <td style="background-color: red;"><?php echo $encours; ?></td>
+                                                            <td style="background-color:#FF0066;"><?php echo $encours; ?></td>
                                                         <?php }else {?>
                                                         <td> 
                                                             <?php echo $encours; ?>
@@ -1329,7 +1329,7 @@ if (!empty($donnees)) {
 
                                                     <!-- Champ modifiable pour nomokprod -->
                                                    <textarea 
-                                                        rows="2" 
+                                                        rows="3" 
                                                         style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;" 
                                                         data-idcomdet="<?php echo $idcomdetList; ?>" 
                                                         onblur="updateNomOkProd(this)" 
@@ -1410,7 +1410,7 @@ if (!empty($donnees)) {
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                                                             </div>
                                                             <div class="modal-body">
-                                                                <p>Êtes-vous sûr de vouloir supprimer les dépôts suivants ?</p>
+                                                                <p>Êtes-vous sûr de vouloir supprimer ce dépôt ?</p>
                                                                 <p><strong>Dépôt:</strong> <?php echo $nomDepot; ?></p>
                                                             </div>
                                                             <div class="modal-footer">
@@ -1486,8 +1486,8 @@ if (!empty($donnees)) {
                                                         $sommeQuantitesDepot = 0;
                                                         if (isset($depotsGrouped)) {
                                                             foreach ($depotsGrouped as $nomDepot => $depotData) {
-                                                                if (isset($depotData[$taille])) {
-                                                                    $sommeQuantitesDepot += $depotData[$taille]['iddepot']; // Ajouter la quantité envoyée pour cette taille
+                                                                if (isset($depotData[$taille]['qteDepot'])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]['qteDepot']; // Ajouter la quantité envoyée pour cette taille
                                                                 }
                                                             }
                                                         }
@@ -1505,6 +1505,7 @@ if (!empty($donnees)) {
                                                 <td><?php echo $totalResteEnvoyer; ?></td> <!-- Total des "Reste à envoyer" -->
                                                  <?php $tabtotalResteEnvoyer[]= $totalResteEnvoyer; // Ajouter au total global ?>
                                             </tr>
+                                            
                                      <tr>
                                             <td>Différence</td>
                                             <?php $differenceTotal = 0; ?>
@@ -1516,8 +1517,8 @@ if (!empty($donnees)) {
                                                             $sommeQuantitesDepot = 0;
                                                             if (isset($depotsGrouped)) {
                                                                 foreach ($depotsGrouped as $nomDepot => $depotData) {
-                                                                    if (isset($depotData[$taille])) {
-                                                                        $sommeQuantitesDepot += $depotData[$taille]['iddepot']; // Ajouter la quantité envoyée pour cette taille
+                                                                      if (isset($depotData[$taille]['qteDepot'])) {
+                                                                        $sommeQuantitesDepot += $depotData[$taille]['qteDepot']; // Ajouter la quantité envoyée pour cette taille
                                                                     }
                                                                 }
                                                             }
@@ -1546,8 +1547,8 @@ if (!empty($donnees)) {
                                                         $sommeQuantitesDepot = 0;
                                                         if (isset($depotsGrouped)) {
                                                             foreach ($depotsGrouped as $nomDepot => $depotData) {
-                                                                if (isset($depotData[$taille])) {
-                                                                    $sommeQuantitesDepot += $depotData[$taille]['iddepot']; // Ajouter la quantité envoyée pour cette taille
+                                                            if (isset($depotData[$taille]['qteDepot'])) {
+                                                                    $sommeQuantitesDepot += $depotData[$taille]['qteDepot']; // Ajouter la quantité envoyée pour cette taille
                                                                 }
                                                             }
                                                         }
@@ -1582,7 +1583,7 @@ if (!empty($donnees)) {
                                                                             <form id="depotForm<?php echo $idcomdet; ?>" method="POST">
                                                                                 <div class="modal-header">
                                                                                     <h5 class="modal-title" id="envoieDepotModalLabel<?php echo $idcomdet; ?>">
-                                                                                        Envoi au dépôt pour la couleur <?php echo $couleur; ?> (ID: <?php echo $idcomdet; ?>)
+                                                                                        Envoi  dépôt pour la couleur <?php echo $couleur; ?> 
                                                                                     </h5>
                                                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                                                                                 </div>
