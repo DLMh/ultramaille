@@ -80,24 +80,23 @@ $_SESSION["last_act"]=time();
             $nvmsg=$rlu+$rlub
         ?>
             <div class="col-md-3" style="text-align: center;">
-                <a href="suivi_packing.php">
-                    <button class="btn" data-aos="fade-up" data-aos-once="true" type="button" style="width: 205px;height: 129.7812px;text-align: center;box-shadow: 0px 0px, 4px 5px 20px rgb(0,0,0);margin-bottom: 15px;position: relative;background-color: #D2B48C; color: white;">
-                        <i class="fas fa-box" style="font-size: 44px;box-shadow: 0px 0px;"></i>
-                    </button>
-                </a><br><span class="fw-bold" style="margin-top: 0px;padding-top: 0px;">Packing</span>
-                </div>
+                <a href="client_lists.php">
+                <button class="btn" data-aos="fade-up" data-aos-once="true" type="button" style="width: 205px; height: 129.7812px; text-align: center; box-shadow: 0px 0px, 4px 5px 20px rgba(0, 0, 0, 0.2); margin-bottom: 15px; position: relative; background-color: #3CB371; color: white;">
+                    <i class="fas fa-clipboard-list" style="font-size: 44px;box-shadow: 0px 0px;"></i>
+                </button>
+                </a><br><span class="fw-bold" style="margin-top: 0px;padding-top: 0px;">Suivi en cours</span>
+            </div>
             <div class="col-md-3" style="text-align: center;">
-                <button class="btn disabled btn-dark" data-aos="fade-up" data-aos-once="true" type="button" style="width: 205px;height: 129.7812px;text-align: center;box-shadow: 4px 5px 20px rgb(0,0,0);margin-bottom: 15px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-exclamation-circle-fill" style="font-size: 44px;">
-                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8 4a.905.905 0 0 0-.9.995l.35 3.507a.552.552 0 0 0 1.1 0l.35-3.507A.905.905 0 0 0 8 4zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"></path>
-                    </svg>
-                </button><br><span class="fw-bold">Vide</span>
-                </div>
+                <button class="btn" data-aos="fade-up" data-aos-once="true" type="button" style="width: 205px; height: 129.7812px; text-align: center; box-shadow: 0px 0px, 4px 5px 20px rgba(0, 0, 0, 0.2); margin-bottom: 15px; position: relative; background-color: #4682B4; color: white;">
+                    <i class="fas fa-check-circle" style="font-size: 44px;box-shadow: 0px 0px;"></i>
+                </button>
+                <br><span class="fw-bold">Suivi clôture</span>
+            </div>
             <div class="col-md-3" style="text-align: center;box-shadow: 0px 0px;">
-            <a href="../general/menu_admin.php">
-                <button class="btn btn-outline-dark" data-aos="fade-up" data-aos-delay="800" data-aos-once="true" type="button" style="width: 205px;height: 129.7812px;text-align: center;box-shadow: 4px 5px 20px rgb(0,0,0);margin-bottom: 15px;"><i class="fas fa-arrow-left" style="font-size: 44px;box-shadow: 0px 0px;"></i>
-
-            </button></a><br><span class="fw-bold">Retour</span>
+            <a href="suivi_packing.php">
+                <button class="btn btn-outline-dark" data-aos="fade-up" data-aos-delay="800" data-aos-once="true" type="button" style="width: 205px;height: 129.7812px;text-align: center;box-shadow: 4px 5px 20px rgb(0,0,0);margin-bottom: 15px;">
+                    <i class="fas fa-arrow-left" style="font-size: 44px;box-shadow: 0px 0px;"></i>
+                </button></a><br><span class="fw-bold">Retour</span>
             </div>
         </div>
     </div>

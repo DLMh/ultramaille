@@ -143,7 +143,7 @@ if ($var != 0) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Suivi de production</title>
+    <title>Suivi de packing</title>
     <link rel="stylesheet" href="../general/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&amp;display=swap">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -205,9 +205,6 @@ if($RefCRM!='VIDE' && $RefCRM!==''){
     // var_dump($sql);
     $result = mysqli_query($conn, $sql);
 
-    // Vérifier si des résultats ont été retournés
-
-        // Tableau pour stocker les résultats
     $donnees = [];
 
 
@@ -361,9 +358,9 @@ if (!empty($donnees)) {
      <!-- fin zone -->
     <!-- si une seule OF -->
     <?php if ($var == 0) { ?>
-    <div class="container mt-5">
+    <div class="container mt-5" id="pdfprint">
     
-        <h1 class="text-center">Suivi de production</h1>
+        <h1 class="text-center">Suivi packing</h1>
         <h2 class="text-center">OF <?php echo $_GET['OF']?></h2>
 
         <div class="row mt-4">
@@ -375,7 +372,7 @@ if (!empty($donnees)) {
             </div>
             <div class="col-6 text-end">
                 <p><strong>N° DE COMMANDE:</strong>   <?php echo $numcde ?? 'n/a' ?> </p>
-                <p><strong>REFERENCE:</strong> <?php echo mb_convert_encoding($RefCde, 'UTF-8', 'ISO-8859-1')  ?> - <?php echo  $desc_ref ?? 'n/a' ; ?> </p>
+                <p><strong>REFERENCE:</strong> <?php echo mb_convert_encoding($RefCde, 'UTF-8')  ?> - <?php echo  $desc_ref ?? 'n/a' ; ?> </p>
             </div>
         </div>         
         <?php
@@ -615,7 +612,7 @@ if (!empty($donnees)) {
                             <?php  $resteEnvoyerArray = []; $tabtotalResteEnvoyer=[];  ?>
                             <?php if(isset($dataByCouleur)):?>    
                                 <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
-                                <table class="table table-bordered">
+                                <table class="table table-bordered" id="Situation_<?php echo $couleur;?>">
                                     <thead>
                                         <tr>
                                             <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
@@ -992,7 +989,7 @@ if (!empty($donnees)) {
                                         }
                                     }
                                 ?>
-                                    <table class="table table-bordered">
+                                    <table class="table table-bordered" id="Total_Recap">
                                         <tbody>
                                             <tr>
                                                 <td>Total Commande</td>
@@ -1026,9 +1023,11 @@ if (!empty($donnees)) {
                                     </table>
                             </div>
                         </div>
+
                     </div>
                     </div>
                 <?php endif;?>
+                
             </div>
             <!-- fin -->
         
@@ -1036,7 +1035,23 @@ if (!empty($donnees)) {
         mysqli_close($conn);
     ?>
     </div>    
-
+    <div class="row" >
+        <div class="col mb-4">
+            <div class="card">
+                <div class="card-body" style="display:flex;justify-content:center;">
+                    <div>
+                        <button onClick="addPdf()" class="btn btn-outline-info rounded-0">
+                            Exporter en PDF
+                        </button>
+                        <button class="btn btn-outline-primary rounded-0 " id="exportButton">Exporter en excel</button>
+                    </div>
+                
+                </div>
+            </div>
+        
+        </div>
+        
+    </div>
     <?php } else { ?>
         <!-- debut  -->
     <?php
@@ -1055,9 +1070,9 @@ if (!empty($donnees)) {
 
     
 
-  <div class="container mt-5">
+  <div class="container mt-5" id="pdfprint">
   
-            <h1 class="text-center">Suivi de production</h1>
+            <h1 class="text-center">Suivi packing</h1>
             <h2 class="text-center">OF <?php echo $_GET['OF']?></h2>
 
             <div class="row mt-4">
@@ -1066,7 +1081,7 @@ if (!empty($donnees)) {
                     <p><strong>DESCRIPTION:</strong> <?php echo $desc_type ?? 'n/a' ;?></p>
                 </div>
                 <div class="col-6 text-end">
-                    <p><strong>N° DE COMMANDE:</strong>   <?php echo $RefCRM ?> </p>
+                    <p><strong>N° DE COMMANDE:</strong>   <?php echo $numcde ?? 'n/a' ?> </p>
                     <p><strong>REFERENCE:</strong> <?php echo $RefCde ?> - <?php echo $desc_ref ?? 'n/a' ;?></p>
                 </div>
             </div>  
@@ -1085,7 +1100,7 @@ if (!empty($donnees)) {
                                     <h5>Couleur: <?php echo $couleur; ?></h5>
                                 </div>
                                 <div class="card-body">
-                                    <table class="table table-bordered">
+                                    <table class="table table-bordered" >
                                         <thead>
                                             <tr>
                                                 <th>Opération</th> <!-- Colonne pour les noms d'opérations -->
@@ -1274,7 +1289,7 @@ if (!empty($donnees)) {
                             <?php  $resteEnvoyerArray = [];$tabtotalResteEnvoyer=[];?>
                             <?php if(isset($dataByCouleur)):?>
                                 <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
-                                    <table class="table table-bordered">
+                                    <table class="table table-bordered" id="Situation_<?php echo $couleur ;?>">
                                         <thead>
                                             <tr>
                                                 <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
@@ -1648,7 +1663,7 @@ if (!empty($donnees)) {
                                         }
                                     }
                                 ?>
-                                         <table class="table table-bordered">
+                                         <table class="table table-bordered" id="Total_recap">
                                         <tbody>
                                             <tr>
                                                 <td>Total Commande</td>
@@ -1687,6 +1702,23 @@ if (!empty($donnees)) {
                <?php }?>
                 </div>
             </div>
+            <div class="row" >
+                <div class="col mb-4">
+                    <div class="card">
+                        <div class="card-body" style="display:flex;justify-content:center;">
+                            <div>
+                                <button onClick="addPdf()" class="btn btn-outline-info rounded-0">
+                                    Exporter en PDF
+                                </button>
+                                <button class="btn btn-outline-primary rounded-0 " id="exportButton">Exporter en excel</button>
+                            </div>
+                        
+                        </div>
+                    </div>
+                
+                </div>
+        
+    </div>
     <?php } ?>
     <!-- ... reste du body -->
   
@@ -1878,6 +1910,97 @@ if (!empty($donnees)) {
         };
     }
 </script>
+<script src="./html2pdf.bundle.min.js"></script>
+<script type="text/javascript">
+    function addPdf(){
+  var element = document.getElementById('pdfprint');
+  element.style.width = '100%';  
+  element.style.padding = '20px';
+  element.style.fontSize = 'x-small';
+
+  var opt = {
+    filename:     'suivi_packing.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+  };
+
+  html2pdf().from(element).set(opt).save();
+    }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- <script>
+    document.getElementById('exportButton').addEventListener('click', function() {
+    // Créer un nouveau classeur
+    var wb = XLSX.utils.book_new();
+    // Créer une première feuille pour les informations de suivi
+        var wsInfo = XLSX.utils.aoa_to_sheet([
+            ["Suivi packing"],
+            ["OF: <?php echo $_GET['OF']; ?>"],
+            [],
+            ["Commande", "<?php echo $_GET['collection']; ?>"],
+            ["DESCRIPTION", "<?php echo $desc_type ?? 'n/a'; ?>"],
+            ["N° DE COMMANDE", "<?php echo $RefCRM; ?>"],
+            ["REFERENCE", "<?php echo $RefCde; ?> - <?php echo $desc_ref ?? 'n/a'; ?>"]
+        ]);
+
+        XLSX.utils.book_append_sheet(wb, wsInfo, "Info_commande");
+    
+    // Ajouter plusieurs tableaux en différentes feuilles
+    var ws1 = XLSX.utils.table_to_sheet(document.getElementById('exportTable'));
+    XLSX.utils.book_append_sheet(wb, ws1, "Détails_opération");
+
+    // Si vous avez un deuxième tableau, ajoutez une autre feuille :
+    var ws2 = XLSX.utils.table_to_sheet(document.getElementById('exportTable1'));
+    XLSX.utils.book_append_sheet(wb, ws2, "Situation du production");
+
+    // Si vous avez un 3eme tableau, ajoutez une autre feuille :
+    var ws3 = XLSX.utils.table_to_sheet(document.getElementById('exportTable2'));
+    XLSX.utils.book_append_sheet(wb, ws3, "Total recapitulatif");
+    
+    // Exporter en fichier Excel
+    XLSX.writeFile(wb, 'suivi_packing.xlsx');
+});
+
+</script> -->
+<script>
+document.getElementById('exportButton').addEventListener('click', function() {
+    // Créer un nouveau classeur
+    var wb = XLSX.utils.book_new();
+
+    // Créer une première feuille pour les informations de suivi
+    var wsInfo = XLSX.utils.aoa_to_sheet([
+        ["Suivi packing"],  // Titre
+        ["OF: <?php echo htmlspecialchars($_GET['OF'], ENT_QUOTES); ?>"],  // OF
+        [],  // Ligne vide pour espacement
+        ["Commande", "<?php echo htmlspecialchars($_GET['collection'], ENT_QUOTES); ?>"],  // Commande
+        ["DESCRIPTION", "<?php echo htmlspecialchars($desc_type ?? 'n/a', ENT_QUOTES); ?>"],  // Description
+        ["N° DE COMMANDE", "<?php echo htmlspecialchars($RefCRM, ENT_QUOTES); ?>"],  // Numéro de commande
+        ["REFERENCE", "<?php echo htmlspecialchars($RefCde, ENT_QUOTES); ?> - <?php echo htmlspecialchars($desc_ref ?? 'n/a', ENT_QUOTES); ?>"]  // Référence
+    ]);
+
+    XLSX.utils.book_append_sheet(wb, wsInfo, "Info_commande");
+
+    // Récupérer tous les tableaux générés dynamiquement
+    var tables = document.querySelectorAll('table');
+
+    // Boucler sur chaque tableau pour l'ajouter en tant que feuille dans Excel
+    tables.forEach(function(table, index) {
+        // Récupérer l'ID du tableau pour l'utiliser comme nom de feuille
+        var sheetName = table.id.replace('table_', ''); // Exemple: "table_ECRU" devient "ECRU"
+        if (!sheetName) {
+            sheetName = 'Operation_' + (index + 1);  // Au cas où il n'y a pas d'ID, générer un nom par défaut
+        }
+        
+        var ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    // Exporter le fichier Excel
+    XLSX.writeFile(wb, 'suivi_packing.xlsx');
+});
+</script>
+
 
 </body>
 </html>

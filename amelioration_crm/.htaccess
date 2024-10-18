@@ -1,0 +1,1 @@
+RewriteEngine On RewriteBase /ultramaille/front/amelioration_crm/ RewriteLog "logs/rewrite.log" RewriteLogLevel 9 RewriteRule ^test/?$ client_lists.php [L]
