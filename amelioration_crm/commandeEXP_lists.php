@@ -13,25 +13,35 @@
 
     $donnees = [];
     if (mysqli_num_rows($result) > 0) {
-        // Parcourir les résultats et stocker dans le tableau
-        while($row = mysqli_fetch_assoc($result)) {
-            $donnees[] = [
-                'id'=> $row["id"],
-                'ref_exp'    => $row["ref_exp"],
-                'date_depot_packing'  => $row["date_depot_packing"],
-                'date_prevu_exp' => $row["date_prevu_exp"],
-                'date_depart_usine' => $row["date_depart_usine"],
-                'transitaire'=> $row["transitaire"],              
-                'desc_coul'       => $row["desc_coul"],
-                'desc_taille'       => $row["desc_taille"],
-                'quantite'       => $row["quantite"],
-                'idcomdet'       => $row["idcomdet"],
-                'nomcli'       => $row["nomcli"],
-                'idcom'       => $row["idcom"],
-                'numcde'       => $row["numcde"],
-                'desc_type'       => $row["desc_type"],
-                'desc_ref'       => $row["desc_ref"]
 
+        while ($row = mysqli_fetch_assoc($result)) {
+            $desc_ref = $row['desc_ref'];
+            $desc_coul = $row['desc_coul'];
+            $desc_taille = $row['desc_taille'];
+            $quantite = $row['quantite'];
+
+            // Vérifie si la combinaison de `desc_ref` et `desc_coul` existe déjà.
+            if (!isset($donnees[$desc_ref][$desc_coul])) {
+                // Initialise les détails si c'est la première fois que cette combinaison est rencontrée.
+                $donnees[$desc_ref][$desc_coul] = [
+                    'id' => $row['id'],
+                    'ref_exp' => $row['ref_exp'],
+                    'date_depot_packing' => $row['date_depot_packing'],
+                    'date_prevu_exp' => $row['date_prevu_exp'],
+                    'date_depart_usine' => $row['date_depart_usine'],
+                    'transitaire' => $row['transitaire'],
+                    'nomcli' => $row['nomcli'],
+                    'idcom' => $row['idcom'],
+                    'numcde' => $row['numcde'],
+                    'desc_type' => $row['desc_type'],
+                    'sizes' => [] // Initialise un tableau pour les tailles.
+                ];
+            }
+
+            // Ajoute la taille et la quantité au tableau `sizes` pour cette combinaison de `desc_ref` et `desc_coul`.
+            $donnees[$desc_ref][$desc_coul]['sizes'][] = [
+                'desc_taille' => $desc_taille,
+                'quantite' => $quantite
             ];
         }
     } else {
@@ -83,42 +93,70 @@
         </a>
     </div>
     <div class="container mt-5">
-        <h1 class="text-center">Listes des commandes par éxpedition </h1>
-        <!-- Table HTML -->
-        <table id="data" class="table table-striped" style="width:100%">
+        <h1 class="text-center">Détails pré-packing list </h1>
+       <?php
+            // Récupère la première entrée pour afficher le nom du client et la référence d'expédition.
+            $first_entry = reset($donnees); // Obtient la première entrée dans $donnees
+            $first_detail = reset($first_entry); // Accède aux détails de la première couleur
+
+        ?>
+        <h4 class="text-center">
+            <?php echo $first_detail['nomcli']; ?> -- <?php echo $first_detail['ref_exp']; ?>
+        </h4>
+        <?php if (!empty($donnees)) { ?>
+        <table class="table table-bordered" style="width:100%">
             <thead>
                 <tr>
-                    <th>Client</th>
-                    <th>REF EXP</th>
-                    <th>N.Commande</th> 
-                    <th>Réference</th>
-                    <th>Désignation</th>
+                    <th>Référence</th>
                     <th>Couleur</th>
-                    <th>Taille</th>
-                    <th>Date</th>
-                    <th>Action</th>
+                    <th>Désignation</th>
+                    <?php
+                    // Collecte toutes les tailles uniques pour créer les colonnes dans l'en-tête.
+                    $all_sizes = [];
+                    foreach ($donnees as $desc_ref => $couleurs) {
+                        foreach ($couleurs as $desc_coul => $details) {
+                            foreach ($details['sizes'] as $size) {
+                                $all_sizes[$size['desc_taille']] = true;
+                            }
+                        }
+                    }
+                    // Affiche chaque taille unique comme en-tête de colonne.
+                    foreach (array_keys($all_sizes) as $taille) {
+                        echo "<th>$taille</th>";
+                    }
+                    ?>
+                    <th>Total</th>
                 </tr>
             </thead>
-         
             <tbody>
-                  <?php if (!empty($donnees)) { ?>
-                    <?php foreach ($donnees as $row) { ?>
+                
+                <?php foreach ($donnees as $desc_ref => $couleurs) { ?>
+                    <?php foreach ($couleurs as $desc_coul => $details) { ?>
+                        <?php $total=0;?>
                         <tr onclick="window.location.href='#';" style="cursor:pointer;">
-                            <td><?php  echo $row['nomcli']; ?></td>
-                            <td><?php  echo $row['ref_exp']; ?></td>
-                            <td><?php echo $row['numcde'] ;?></td>
-                            <td><?php echo $row['desc_ref'];?></td>
-                            <td><?php echo $row['desc_type'];?></td>
-                            <td><?php echo $row['desc_coul'];?></td>
-                            <td><?php echo $row['desc_taille'];?>: <?php echo $row['quantite'];?></td>
-                            <td><?php echo $row['date_depot_packing']; ?></td>
-                            <td>Action</td>
+                            <td><?php echo $desc_ref; ?></td>
+                            <td><?php echo $desc_coul; ?></td>
+                            <td><?php echo $details['desc_type']; ?></td>
+                            <?php
+                            // Initialise un tableau temporaire pour les quantités par taille.
+                            $quantities_by_size = array_fill_keys(array_keys($all_sizes), 0);
+                            foreach ($details['sizes'] as $size) {
+                                $quantities_by_size[$size['desc_taille']] = $size['quantite'];
+                            }
+                            // Affiche la quantité pour chaque taille.
+                            foreach ($quantities_by_size as $quantite) {
+                                echo "<td>$quantite</td>";
+                                $total+=$quantite;
+                            }
+                            ?>
+                            <td><?php echo $total;?></td>
                         </tr>
-                    <?php }?>
+                    <?php } ?>
                 <?php } ?>
             </tbody>
-        
         </table>
+
+        <?php } ?>
     </div>
     
     <!-- jQuery -->
@@ -148,7 +186,7 @@
         }
     </script>
     
-    <!-- Script d'initialisation de DataTables -->
+    <!-- Script d'initialisation de DataTables
     <script>
 
         $(document).ready(function() {
@@ -183,7 +221,7 @@
         });
     });
 
-    </script>
+    </script> -->
      <footer class="bg-primary-gradient">
         <div class="container py-4 py-lg-5">
             <div class="row justify-content-center">
