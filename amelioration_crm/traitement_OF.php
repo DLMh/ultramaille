@@ -11,6 +11,7 @@ if (isset($_GET['refcde'])) {
     $RefCde = urldecode($_GET['refcde']);
     $RefCRM = $_GET['refcrm'];
     $ClientID = $_GET['clientID'];
+    $client=$_GET['client'];
 } else {
     echo "Paramètres manquants dans l'URL.";
     exit;
@@ -170,15 +171,54 @@ if ($var != 0) {
             </div>
         </div>
     </nav>
-      <div class="container mt-5">
-        <a href="client_lists.php">
-            <button class="btn btn-primary" type="button" style="border-radius: 50%;padding: 8.6px 32px;padding-right: 10px;padding-left: 10px;padding-bottom: 10px;padding-top: 10px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-arrow-left-circle-fill" style="font-size: 41px;">
-                        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"></path>
-                </svg>
-            </button>
-        </a>
+    <div id="loading" class="spinner" style="display:none;">
+        Veuillez patienter...
     </div>
+    <style>
+                .spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+
+        .spinner:before {
+            content: "";
+            box-sizing: border-box;
+            width: 40px;
+            height: 40px;
+            border: 6px solid #ccc;
+            border-top-color: #333;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+
+      <div class="container mt-5">
+            <a href="client_lists.php">
+                <button class="btn btn-primary" type="button" style="border-radius: 50%;padding: 8.6px 32px;padding-right: 10px;padding-left: 10px;padding-bottom: 10px;padding-top: 10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-arrow-left-circle-fill" style="font-size: 41px;">
+                            <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"></path>
+                    </svg>
+                </button>
+            </a>
+        </div>
     <style>
         /* Custom hover effect with transition */
         .hover-depot {
@@ -769,7 +809,7 @@ if (!empty($donnees)) {
                                                                     data-iddepot="<?php echo isset($depotData[$taille]['iddepot']) ? $depotData[$taille]['iddepot'] : 'N/A'; ?>" 
                                                                     value="<?php echo $depotData[$taille]['qteDepot']; ?>" 
                                                                     min="0"
-                                                                    style="width: 100%;">
+                                                                     style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;">
                                                             <?php else: ?>
                                                                 N/A 
                                                             <?php endif; ?>
@@ -836,7 +876,7 @@ if (!empty($donnees)) {
                                                         // Calcul du "Reste à envoyer" avec soustraction de la somme des dépôts
                                                         $resteEnvoyer = $packingValue - $details['okprod'] - $sommeQuantitesDepot;
                                                         $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
-
+                                                      
                                                         // Affichage de la valeur "Reste à envoyer" (celle de "Entrée Packing" si trouvé)
                                                         ?>
                                                        <td><?php echo $packingFound ? $resteEnvoyer : 'N/A'; ?></td>
@@ -934,6 +974,8 @@ if (!empty($donnees)) {
                                                                                 <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
                                                                                 <input type="hidden" name="taille" value="<?php echo $taille; ?>">
                                                                                 <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
+                                                                                <input type="hidden" name="refcrm" value="<?php echo $RefCRM;?>">
+                                                                                <input type="hidden" name="client" value="<?php echo $client;?>">
                                                                                 <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
                                                                                 <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
                                                                             </div>
@@ -1445,7 +1487,7 @@ if (!empty($donnees)) {
                                                                     data-iddepot="<?php echo isset($depotData[$taille]['iddepot']) ? $depotData[$taille]['iddepot'] : 'N/A'; ?>" 
                                                                     value="<?php echo $depotData[$taille]['qteDepot']; ?>" 
                                                                     min="0"
-                                                                    style="width: 100%;">
+                                                                     style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
                                                             <?php else: ?>
                                                                 N/A 
                                                             <?php endif; ?>
@@ -1510,7 +1552,7 @@ if (!empty($donnees)) {
                                                         // Calcul du "Reste à envoyer" avec soustraction de la somme des dépôts
                                                         $resteEnvoyer = $packingValue - $details['okprod'] - $sommeQuantitesDepot;
                                                         $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
-
+                                                         
                                                         // Affichage de la valeur "Reste à envoyer" (celle de "Entrée Packing" si trouvé)
                                                         ?>
                                                        <td><?php echo $packingFound ? $resteEnvoyer : 'N/A'; ?></td>
@@ -1588,7 +1630,7 @@ if (!empty($donnees)) {
                                                                      data-bs-toggle="modal" 
                                                                     data-bs-target="#envoieDepotModal<?php echo $idcomdet; ?>"
                                                                 >
-                                                                    Envoi dépôt pour la taille <?php echo $taille; ?>
+                                                                    Dépot packing list <?php echo $taille; ?>
                                                                 </button>
                                                                 
                                                                 <!-- Modal HTML -->
@@ -1607,6 +1649,8 @@ if (!empty($donnees)) {
                                                                                     <input type="hidden" name="couleur" value="<?php echo $couleur; ?>">
                                                                                     <input type="hidden" name="taille" value="<?php echo $taille; ?>">
                                                                                     <input type="hidden" name="idcomdet" value="<?php echo $idcomdet; ?>">
+                                                                                    <input type="hidden" name="refcrm" value="<?php echo $RefCRM;?>">
+                                                                                    <input type="hidden" name="client" value="<?php echo $client;?>">
                                                                                     <input type="text" class="form-control mb-3" name="nom_depot" placeholder="Saisissez le nom du dépôt" required>
                                                                                     <input type="number" class="form-control" name="quantite" placeholder="Saisissez la quantité" required>
                                                                                 </div>
@@ -1739,7 +1783,7 @@ if (!empty($donnees)) {
         </div>
         <hr>
         <div class="text-muted d-flex justify-content-between align-items-center pt-3">
-            <p class="mb-0">Copyright © 2023 Ultramaille</p>
+            <p class="mb-0">Copyright © 2024 Ultramaille</p>
             <ul class="list-inline mb-0">
                 <li class="list-inline-item"></li>
                 <li class="list-inline-item"></li>
@@ -1811,24 +1855,33 @@ if (!empty($donnees)) {
 </script>
 
 <script>
-    function submitDepot(idcomdet) {
-        var formId = '#depotForm' + idcomdet;  // Formulaire spécifique pour chaque modal
-        var resultId = '#result' + idcomdet;   // Div pour afficher le résultat
-        
-        $.ajax({
-            url: 'insert_depot.php',  // Fichier PHP qui va traiter la requête
-            type: 'POST',
-            data: $(formId).serialize(),   // Sérialiser les données du formulaire
-            success: function(response) {
-                $(resultId).html('<div class="alert alert-success">Données insérées avec succès !</div>');
+   function submitDepot(idcomdet) {
+    var formId = '#depotForm' + idcomdet;  // Formulaire spécifique pour chaque modal
+    var resultId = '#result' + idcomdet;   // Div pour afficher le résultat
+    
+    $.ajax({
+        url: 'insert_depot.php',  // Fichier PHP qui va traiter la requête
+        type: 'POST',
+        data: $(formId).serialize(),   // Sérialiser les données du formulaire
+        dataType: 'json',   // Attendre une réponse JSON du serveur
+        success: function(response) {
+            if (response.status === 'success') {
+                // Si le backend renvoie un succès
+                $(resultId).html('<div class="alert alert-success">' + response.message + '</div>');
                 $(formId)[0].reset();  // Réinitialise le formulaire après l'envoi
-                location.reload(); 
-            },
-            error: function() {
-                $(resultId).html('<div class="alert alert-danger">Erreur lors de l\'insertion des données.</div>');
+                location.reload();
+            } else if (response.status === 'error') {
+                // Si le backend renvoie une erreur (par exemple, dépôt déjà existant)
+                $(resultId).html('<div class="alert alert-danger">' + response.message + '</div>');
             }
-        });
-    }
+        },
+        error: function() {
+            // Gestion des erreurs de la requête AJAX
+            $(resultId).html('<div class="alert alert-danger">Erreur lors de l\'insertion des données.</div>');
+        }
+    });
+}
+
 </script>
 <script>
     document.querySelectorAll('.qte-depot').forEach(input => {
@@ -1912,89 +1965,140 @@ if (!empty($donnees)) {
 </script>
 <script src="./html2pdf.bundle.min.js"></script>
 <script type="text/javascript">
-    function addPdf(){
-  var element = document.getElementById('pdfprint');
-  element.style.width = '100%';  
-  element.style.padding = '20px';
-  element.style.fontSize = 'x-small';
+ 
+    function addPdf() {
+        var element = document.getElementById('pdfprint');
+        element.style.width = '100%';  
+        element.style.padding = '20px';
+        element.style.fontSize = 'x-small';
 
-  var opt = {
-    filename:     'suivi_packing.pdf',
-    image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2 },
-    jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
-  };
+        // Afficher l'élément de chargement
+        var loading = document.getElementById('loading');
+        loading.style.display = 'flex';  // Affiche le message de chargement avec le spinner
 
-  html2pdf().from(element).set(opt).save();
+        var opt = {
+            filename: 'suivi_packing.pdf',
+            image: { type: 'jpeg', quality: 0.75 },  
+            html2canvas: { scale: 1.5, useCORS: true },    
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape', compress: true }  
+        };
+
+        // Commencer l'exportation en PDF
+        html2pdf().from(element).set(opt).save().then(function() {
+            // Masquer l'élément de chargement une fois l'exportation terminée
+            loading.style.display = 'none';  
+        }).catch(function(err) {
+            console.error('Erreur lors de l\'exportation du PDF : ', err);
+            loading.style.display = 'none';  // Masquer même en cas d'erreur
+        });
     }
+
+
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- <script>
-    document.getElementById('exportButton').addEventListener('click', function() {
-    // Créer un nouveau classeur
-    var wb = XLSX.utils.book_new();
-    // Créer une première feuille pour les informations de suivi
-        var wsInfo = XLSX.utils.aoa_to_sheet([
-            ["Suivi packing"],
-            ["OF: <?php echo $_GET['OF']; ?>"],
-            [],
-            ["Commande", "<?php echo $_GET['collection']; ?>"],
-            ["DESCRIPTION", "<?php echo $desc_type ?? 'n/a'; ?>"],
-            ["N° DE COMMANDE", "<?php echo $RefCRM; ?>"],
-            ["REFERENCE", "<?php echo $RefCde; ?> - <?php echo $desc_ref ?? 'n/a'; ?>"]
-        ]);
 
-        XLSX.utils.book_append_sheet(wb, wsInfo, "Info_commande");
-    
-    // Ajouter plusieurs tableaux en différentes feuilles
-    var ws1 = XLSX.utils.table_to_sheet(document.getElementById('exportTable'));
-    XLSX.utils.book_append_sheet(wb, ws1, "Détails_opération");
-
-    // Si vous avez un deuxième tableau, ajoutez une autre feuille :
-    var ws2 = XLSX.utils.table_to_sheet(document.getElementById('exportTable1'));
-    XLSX.utils.book_append_sheet(wb, ws2, "Situation du production");
-
-    // Si vous avez un 3eme tableau, ajoutez une autre feuille :
-    var ws3 = XLSX.utils.table_to_sheet(document.getElementById('exportTable2'));
-    XLSX.utils.book_append_sheet(wb, ws3, "Total recapitulatif");
-    
-    // Exporter en fichier Excel
-    XLSX.writeFile(wb, 'suivi_packing.xlsx');
-});
-
-</script> -->
 <script>
+// document.getElementById('exportButton').addEventListener('click', function() {
+//     // Créer un nouveau classeur
+//     var wb = XLSX.utils.book_new();
+
+//     // Fonction pour nettoyer les noms de feuilles des caractères interdits
+//     function sanitizeSheetName(sheetName) {
+//         return sheetName.replace(/[:\\\/\?\*\[\]]/g, '_');
+//     }
+
+//     // Créer une première feuille pour les informations de suivi
+//     var infoData = [
+//         ["Suivi packing"],
+//         ["OF: <?php echo htmlspecialchars($_GET['OF'], ENT_QUOTES); ?>"],
+//         [],
+//         ["Commande", "<?php echo htmlspecialchars($_GET['collection'], ENT_QUOTES); ?>"],
+//         ["DESCRIPTION", "<?php echo htmlspecialchars($desc_type ?? 'n/a', ENT_QUOTES); ?>"],
+//         ["N° DE COMMANDE", "<?php echo htmlspecialchars($RefCRM, ENT_QUOTES); ?>"],
+//         ["REFERENCE", "<?php echo htmlspecialchars($RefCde, ENT_QUOTES); ?> - <?php echo htmlspecialchars($desc_ref ?? 'n/a', ENT_QUOTES); ?>"]
+//     ];
+//     var wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+//     XLSX.utils.book_append_sheet(wb, wsInfo, sanitizeSheetName("Info_commande"));
+
+//     // Récupérer tous les tableaux générés dynamiquement
+//     var tables = document.querySelectorAll('table');
+
+//     // Table de données pour les opérations combinées
+//     var combinedData = [];
+
+//     // Boucler sur chaque tableau pour l'ajouter dans combinedData
+//     tables.forEach(function(table, index) {
+//         var sheetName = table.id.replace('table_', '') || 'Operation_' + (index + 1); 
+//         combinedData.push([`Tableau: ${sanitizeSheetName(sheetName)}`]);
+
+//         // Extraire les données du tableau et les ajouter à combinedData
+//         var sheetData = XLSX.utils.sheet_to_json(XLSX.utils.table_to_sheet(table), { header: 1 });
+//         combinedData = combinedData.concat(sheetData, [[""]]);  // Ajouter les données du tableau et une ligne vide
+//     });
+
+//     // Créer la feuille pour les données combinées et ajouter au classeur
+//     var wsData = XLSX.utils.aoa_to_sheet(combinedData);
+//     XLSX.utils.book_append_sheet(wb, wsData, "Détails_combinés");
+
+//     // Exporter le fichier Excel
+//     XLSX.writeFile(wb, 'suivi_packing.xlsx');
+// });
 document.getElementById('exportButton').addEventListener('click', function() {
     // Créer un nouveau classeur
     var wb = XLSX.utils.book_new();
 
-    // Créer une première feuille pour les informations de suivi
-    var wsInfo = XLSX.utils.aoa_to_sheet([
-        ["Suivi packing"],  // Titre
-        ["OF: <?php echo htmlspecialchars($_GET['OF'], ENT_QUOTES); ?>"],  // OF
-        [],  // Ligne vide pour espacement
-        ["Commande", "<?php echo htmlspecialchars($_GET['collection'], ENT_QUOTES); ?>"],  // Commande
-        ["DESCRIPTION", "<?php echo htmlspecialchars($desc_type ?? 'n/a', ENT_QUOTES); ?>"],  // Description
-        ["N° DE COMMANDE", "<?php echo htmlspecialchars($RefCRM, ENT_QUOTES); ?>"],  // Numéro de commande
-        ["REFERENCE", "<?php echo htmlspecialchars($RefCde, ENT_QUOTES); ?> - <?php echo htmlspecialchars($desc_ref ?? 'n/a', ENT_QUOTES); ?>"]  // Référence
-    ]);
+    // Fonction pour nettoyer les noms de feuilles des caractères interdits
+    function sanitizeSheetName(sheetName) {
+        return sheetName.replace(/[:\\\/\?\*\[\]]/g, '_');
+    }
 
-    XLSX.utils.book_append_sheet(wb, wsInfo, "Info_commande");
+    // Créer une première feuille pour les informations de suivi
+    var infoData = [
+        ["Suivi packing"],
+        ["OF: <?php echo htmlspecialchars($_GET['OF'], ENT_QUOTES); ?>"],
+        [],
+        ["Commande", "<?php echo htmlspecialchars($_GET['collection'], ENT_QUOTES); ?>"],
+        ["DESCRIPTION", "<?php echo htmlspecialchars($desc_type ?? 'n/a', ENT_QUOTES); ?>"],
+        ["N° DE COMMANDE", "<?php echo htmlspecialchars($RefCRM, ENT_QUOTES); ?>"],
+        ["REFERENCE", "<?php echo htmlspecialchars($RefCde, ENT_QUOTES); ?> - <?php echo htmlspecialchars($desc_ref ?? 'n/a', ENT_QUOTES); ?>"]
+    ];
+    var wsInfo = XLSX.utils.aoa_to_sheet(infoData);
+    XLSX.utils.book_append_sheet(wb, wsInfo, sanitizeSheetName("Info_commande"));
 
     // Récupérer tous les tableaux générés dynamiquement
     var tables = document.querySelectorAll('table');
 
-    // Boucler sur chaque tableau pour l'ajouter en tant que feuille dans Excel
+    // Table de données pour les opérations combinées
+    var combinedData = [];
+
+    // Boucler sur chaque tableau pour l'ajouter dans combinedData
     tables.forEach(function(table, index) {
-        // Récupérer l'ID du tableau pour l'utiliser comme nom de feuille
-        var sheetName = table.id.replace('table_', ''); // Exemple: "table_ECRU" devient "ECRU"
-        if (!sheetName) {
-            sheetName = 'Operation_' + (index + 1);  // Au cas où il n'y a pas d'ID, générer un nom par défaut
-        }
+        var sheetName = table.id.replace('table_', '') || 'Operation_' + (index + 1); 
+        combinedData.push([`Tableau: ${sanitizeSheetName(sheetName)}`]);
+
+        // Extraire les données des lignes visibles du tableau
+        var sheetData = [];
+        table.querySelectorAll('tr').forEach(function(row) {
+            if (row.style.display !== 'none') { // Vérifier si la ligne est visible
+                var rowData = [];
+                row.querySelectorAll('td, th').forEach(function(cell) {
+                    var input = cell.querySelector('input');
+                    if (input) {
+                        rowData.push(input.value.trim()); // Récupérer la valeur de l'input
+                    } else {
+                        rowData.push(cell.innerText.trim() || cell.textContent.trim()); // Sinon récupérer le texte
+                    }
+                });
+                sheetData.push(rowData);
+            }
+        });
         
-        var ws = XLSX.utils.table_to_sheet(table);
-        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        combinedData = combinedData.concat(sheetData, [[""]]);  // Ajouter les données du tableau et une ligne vide
     });
+
+    // Créer la feuille pour les données combinées et ajouter au classeur
+    var wsData = XLSX.utils.aoa_to_sheet(combinedData);
+    XLSX.utils.book_append_sheet(wb, wsData, "Détails_combinés");
 
     // Exporter le fichier Excel
     XLSX.writeFile(wb, 'suivi_packing.xlsx');

@@ -118,7 +118,7 @@ $_SESSION["last_act"]=time();
             </div>
             <hr>
             <div class="text-muted d-flex justify-content-between align-items-center pt-3">
-                <p class="mb-0">Copyright © 2023 Ultramaille</p>
+                <p class="mb-0">Copyright © 2024 Ultramaille</p>
                 <ul class="list-inline mb-0">
                     <li class="list-inline-item"></li>
                     <li class="list-inline-item"></li>

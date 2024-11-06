@@ -1,11 +1,41 @@
 <?php 
-    include("../../admin/databases/db_sql_server.php");
-    $sql = "Select * from Clients";
-    $res=sqlsrv_query($con, $sql);
-    
+//SELECT p.*, c.numcde,c.desc_type,c.desc_ref FROM packing p JOIN commande_mvt c ON p.idcomdet = c.idcomdet WHERE p.idcom = 176; requete ilaina iaffichena requete liste commande par exp
 
-    if ($res === false) {
-        die(print_r(sqlsrv_errors(), true));
+// SELECT idcom, ref_exp, MIN(date_depot_packing) AS date_depot_packing, MIN(date_prevu_exp) AS date_prevu_exp, MIN(date_depart_usine) AS date_depart_usine, transitaire, desc_coul, GROUP_CONCAT(desc_taille SEPARATOR '-') AS tailles, SUM(quantite) AS total_quantite, nomcli FROM packing GROUP BY idcom, ref_exp, transitaire, desc_coul, nomcli;
+
+    if(isset($_GET['idcom'])){
+        $idcom=$_GET['idcom'];
+    }
+
+    include("../../admin/databases/db_to_mysql.php");
+    $sql = "SELECT p.*, c.numcde,c.desc_type,c.desc_ref FROM packing p JOIN commande_mvt c ON p.idcomdet = c.idcomdet WHERE p.idcom =".$idcom;
+    $result = mysqli_query($conn, $sql);
+
+    $donnees = [];
+    if (mysqli_num_rows($result) > 0) {
+        // Parcourir les résultats et stocker dans le tableau
+        while($row = mysqli_fetch_assoc($result)) {
+            $donnees[] = [
+                'id'=> $row["id"],
+                'ref_exp'    => $row["ref_exp"],
+                'date_depot_packing'  => $row["date_depot_packing"],
+                'date_prevu_exp' => $row["date_prevu_exp"],
+                'date_depart_usine' => $row["date_depart_usine"],
+                'transitaire'=> $row["transitaire"],              
+                'desc_coul'       => $row["desc_coul"],
+                'desc_taille'       => $row["desc_taille"],
+                'quantite'       => $row["quantite"],
+                'idcomdet'       => $row["idcomdet"],
+                'nomcli'       => $row["nomcli"],
+                'idcom'       => $row["idcom"],
+                'numcde'       => $row["numcde"],
+                'desc_type'       => $row["desc_type"],
+                'desc_ref'       => $row["desc_ref"]
+
+            ];
+        }
+    } else {
+        echo "no rows";
     }
    
 ?>
@@ -44,7 +74,7 @@
         </div>
     </nav>
     <div class="container mt-5">
-        <a href="menu_suivi.php">
+        <a href="expedition_list.php">
             <button class="btn btn-primary" type="button" style="border-radius: 50%;padding: 8.6px 32px;padding-right: 10px;padding-left: 10px;padding-bottom: 10px;padding-top: 10px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-arrow-left-circle-fill" style="font-size: 41px;">
                         <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"></path>
@@ -53,25 +83,38 @@
         </a>
     </div>
     <div class="container mt-5">
-        <h1 class="text-center">Listes des clients</h1>
-        
+        <h1 class="text-center">Listes des commandes par éxpedition </h1>
         <!-- Table HTML -->
         <table id="data" class="table table-striped" style="width:100%">
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>Client</th>
+                    <th>REF EXP</th>
+                    <th>N.Commande</th> 
+                    <th>Réference</th>
+                    <th>Désignation</th>
+                    <th>Couleur</th>
+                    <th>Taille</th>
+                    <th>Date</th>
+                    <th>Action</th>
                 </tr>
             </thead>
          
             <tbody>
-                <?php  while ($row = sqlsrv_fetch_array($res, SQLSRV_FETCH_ASSOC)) { ?>
-
-                    <tr onclick="window.location.href='commandes_lists.php?clientID=<?php echo $row['ClientID']; ?>&nomcli=<?php  echo $row['NomCli']; ?>';" style="cursor:pointer;">
-                        <td><?php  echo $row['ClientID']; ?></td>
-                        <td><?php  echo $row['NomCli']; ?></td>
-                    </tr>
-                
+                  <?php if (!empty($donnees)) { ?>
+                    <?php foreach ($donnees as $row) { ?>
+                        <tr onclick="window.location.href='#';" style="cursor:pointer;">
+                            <td><?php  echo $row['nomcli']; ?></td>
+                            <td><?php  echo $row['ref_exp']; ?></td>
+                            <td><?php echo $row['numcde'] ;?></td>
+                            <td><?php echo $row['desc_ref'];?></td>
+                            <td><?php echo $row['desc_type'];?></td>
+                            <td><?php echo $row['desc_coul'];?></td>
+                            <td><?php echo $row['desc_taille'];?>: <?php echo $row['quantite'];?></td>
+                            <td><?php echo $row['date_depot_packing']; ?></td>
+                            <td>Action</td>
+                        </tr>
+                    <?php }?>
                 <?php } ?>
             </tbody>
         
@@ -90,7 +133,20 @@
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
   
-
+    <script>
+        
+        function updateField(idcom,ref_exp,couleur, field, value) {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "update_field.php", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    console.log(xhr.responseText); // Optional: Handle response
+                }
+            };
+            xhr.send(`idcom=${idcom}&ref_exp=${ref_exp}&couleur=${couleur}&field=${field}&value=${value}`);
+        }
+    </script>
     
     <!-- Script d'initialisation de DataTables -->
     <script>

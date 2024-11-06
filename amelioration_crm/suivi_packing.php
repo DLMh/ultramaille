@@ -87,10 +87,13 @@ $_SESSION["last_act"]=time();
                 </a><br><span class="fw-bold" style="margin-top: 0px;padding-top: 0px;">Suivi Packing</span>
             </div>
             <div class="col-md-3" style="text-align: center;">
-                <button class="btn" data-aos="fade-up" data-aos-once="true" type="button" style="width: 205px; height: 129.7812px; text-align: center; box-shadow: 0px 0px, 4px 5px 20px rgba(0, 0, 0, 0.2); margin-bottom: 15px; position: relative; background-color: #4682B4; color: white;">
-                    <i class="fas fa-box-open" style="font-size: 44px;box-shadow: 0px 0px;"></i>
-                </button>
+                <a href="expedition_list.php">
+                    <button class="btn" data-aos="fade-up" data-aos-once="true" type="button" style="width: 205px; height: 129.7812px; text-align: center; box-shadow: 0px 0px, 4px 5px 20px rgba(0, 0, 0, 0.2); margin-bottom: 15px; position: relative; background-color: #4682B4; color: white;">
+                        <i class="fas fa-box-open" style="font-size: 44px;box-shadow: 0px 0px;"></i>
+                    </button>
+                </a>
                 <br><span class="fw-bold">Packing List</span>
+
             </div>
             <div class="col-md-3" style="text-align: center;box-shadow: 0px 0px;">
             <a href="packing.php">
@@ -117,7 +120,7 @@ $_SESSION["last_act"]=time();
             </div>
             <hr>
             <div class="text-muted d-flex justify-content-between align-items-center pt-3">
-                <p class="mb-0">Copyright © 2023 Ultramaille</p>
+                <p class="mb-0">Copyright © 2024 Ultramaille</p>
                 <ul class="list-inline mb-0">
                     <li class="list-inline-item"></li>
                     <li class="list-inline-item"></li>

@@ -1,9 +1,11 @@
 <?php 
     
     include("../../admin/databases/db_sql_server.php");
-   
+    
     if (isset($_GET['clientID'])) {
     $id = $_GET['clientID'];
+    $client=$_GET['nomcli'];
+    
     } else {
         
         echo "Paramètres manquants dans l'URL.";
@@ -82,7 +84,7 @@
                         <td><?php   echo mb_convert_encoding($row['RefCde'], 'UTF-8') ; ?></td>
                       
                         <td>
-                            <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>&&collection=<?php echo $row['NomCollect'] ?>" >
+                            <a href="traitement_OF.php?refcde=<?php echo $row['RefCde']?>&&refcrm=<?php  echo $row['RefCRM']; ?>&&clientID=<?php echo $id ?>&&OF=<?php echo $row['NumOF'] ?>&&collection=<?php echo $row['NomCollect'] ?>&&client=<?php echo $client ?>" >
                                 <button class="btn btn-info">Suivi</button>
                             </a>
                         </td>
@@ -163,7 +165,7 @@
             </div>
             <hr>
             <div class="text-muted d-flex justify-content-between align-items-center pt-3">
-                <p class="mb-0">Copyright © 2023 Ultramaille</p>
+                <p class="mb-0">Copyright © 2024 Ultramaille</p>
                 <ul class="list-inline mb-0">
                     <li class="list-inline-item"></li>
                     <li class="list-inline-item"></li>
