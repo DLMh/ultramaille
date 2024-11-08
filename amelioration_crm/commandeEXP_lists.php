@@ -12,6 +12,7 @@
     $result = mysqli_query($conn, $sql);
 
     $donnees = [];
+    $ids = [];
     if (mysqli_num_rows($result) > 0) {
 
         while ($row = mysqli_fetch_assoc($result)) {
@@ -19,6 +20,7 @@
             $desc_coul = $row['desc_coul'];
             $desc_taille = $row['desc_taille'];
             $quantite = $row['quantite'];
+            $ids[] = $row['id'];
 
             // Vérifie si la combinaison de `desc_ref` et `desc_coul` existe déjà.
             if (!isset($donnees[$desc_ref][$desc_coul])) {
@@ -54,13 +56,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Client </title>
+    <title>Ultramaille </title>
     <link rel="stylesheet" href="../general/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&amp;display=swap">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../general/assets/fonts/font-awesome.min.css">
     <link rel="stylesheet" href="../general/assets/fonts/material-icons.min.css">
     <link rel="stylesheet" href="../general/assets/css/aos.min.css">
+    <link rel="stylesheet" href="../general/css/style_commandeEXP.css">
     <link rel="stylesheet" href="../general/assets/css/Dark-Mode-Switch.css">
     <link rel="icon" href="../general/image/UTM_logo_sans_fond.png">
       <!-- DataTables CSS -->
@@ -104,59 +107,167 @@
             <?php echo $first_detail['nomcli']; ?> -- <?php echo $first_detail['ref_exp']; ?>
         </h4>
         <?php if (!empty($donnees)) { ?>
-        <table class="table table-bordered" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Référence</th>
-                    <th>Couleur</th>
-                    <th>Désignation</th>
-                    <?php
-                    // Collecte toutes les tailles uniques pour créer les colonnes dans l'en-tête.
-                    $all_sizes = [];
-                    foreach ($donnees as $desc_ref => $couleurs) {
-                        foreach ($couleurs as $desc_coul => $details) {
-                            foreach ($details['sizes'] as $size) {
-                                $all_sizes[$size['desc_taille']] = true;
+            <table class="table table-bordered" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Référence</th>
+                        <th>Couleur</th>
+                        <th>Désignation</th>
+                        <?php
+                        // Collecte toutes les tailles uniques pour créer les colonnes dans l'en-tête.
+                        $all_sizes = [];
+                        foreach ($donnees as $desc_ref => $couleurs) {
+                            foreach ($couleurs as $desc_coul => $details) {
+                                foreach ($details['sizes'] as $size) {
+                                    $all_sizes[$size['desc_taille']] = true;
+                                }
                             }
                         }
-                    }
-                    // Affiche chaque taille unique comme en-tête de colonne.
-                    foreach (array_keys($all_sizes) as $taille) {
-                        echo "<th>$taille</th>";
-                    }
-                    ?>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                
-                <?php foreach ($donnees as $desc_ref => $couleurs) { ?>
-                    <?php foreach ($couleurs as $desc_coul => $details) { ?>
-                        <?php $total=0;?>
-                        <tr onclick="window.location.href='#';" style="cursor:pointer;">
-                            <td><?php echo $desc_ref; ?></td>
-                            <td><?php echo $desc_coul; ?></td>
-                            <td><?php echo $details['desc_type']; ?></td>
-                            <?php
-                            // Initialise un tableau temporaire pour les quantités par taille.
-                            $quantities_by_size = array_fill_keys(array_keys($all_sizes), 0);
-                            foreach ($details['sizes'] as $size) {
-                                $quantities_by_size[$size['desc_taille']] = $size['quantite'];
-                            }
-                            // Affiche la quantité pour chaque taille.
-                            foreach ($quantities_by_size as $quantite) {
-                                echo "<td>$quantite</td>";
-                                $total+=$quantite;
-                            }
-                            ?>
-                            <td><?php echo $total;?></td>
-                        </tr>
-                    <?php } ?>
-                <?php } ?>
-            </tbody>
-        </table>
+                        // Affiche chaque taille unique comme en-tête de colonne.
+                        foreach (array_keys($all_sizes) as $taille) {
+                            echo "<th>$taille</th>";
+                        }
+                        ?>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $previous_ref = null; // Initialise une variable pour stocker la référence précédente
 
+                    foreach ($donnees as $desc_ref => $couleurs) { ?>
+                        <?php foreach ($couleurs as $desc_coul => $details) { ?>
+                            <?php $total = 0; ?>
+                            <tr onclick="window.location.href='#';" style="cursor:pointer;">
+                                <td><?php echo $desc_ref; ?></td>
+                                <td><?php echo $desc_coul; ?></td>
+                                <td><?php echo $details['desc_type']; ?></td>
+                                <?php
+                                // Initialise un tableau temporaire pour les quantités par taille.
+                                $quantities_by_size = array_fill_keys(array_keys($all_sizes), 0);
+                                foreach ($details['sizes'] as $size) {
+                                    $quantities_by_size[$size['desc_taille']] = $size['quantite'];
+                                }
+                                // Affiche la quantité pour chaque taille et calcule le total.
+                                foreach ($quantities_by_size as $quantite) {
+                                    echo "<td>$quantite</td>";
+                                    $total += $quantite;
+                                }
+                                ?>
+                                <td><?php echo $total; ?></td>
+                            </tr>
+                        <?php } ?>
+
+                        <?php
+                        // Si la référence actuelle est différente de la précédente, affiche le formulaire
+                        if ($desc_ref !== $previous_ref) {
+                            $previous_ref = $desc_ref; // Met à jour la référence précédente
+                        ?>
+                        <tr>
+                            <td colspan="<?php echo count($all_sizes) + 4; ?>" style="text-align: center;">
+                                <form  id="form-detail-colis-<?php echo htmlspecialchars($desc_ref); ?>" method="post" onsubmit="submitForm(event, '<?php echo htmlspecialchars($desc_ref); ?>')" class="p-3 border rounded">
+                                    <input type="hidden" name="reference" value="<?php echo htmlspecialchars($desc_ref); ?>">
+                                    <input type="hidden" name="nomcli" value="<?php echo $first_detail['nomcli']; ?>">
+                                    <input type="hidden" name="ref_exp" value="<?php echo $first_detail['ref_exp']; ?>">
+
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <?php foreach (array_keys($all_sizes) as $taille) { ?>
+                                                    <th><?php echo $taille; ?></th>
+                                                <?php } ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Ligne pour les champs de poids -->
+                                            <tr>
+                                                <?php foreach ($quantities_by_size as $taille => $quantite) { ?>
+                                                    <?php if ($quantite > 0) { ?>
+                                                        <td>
+                                                            <label for="poids_<?php echo $taille; ?>">Poids du colis</label>
+                                                            
+                                                            <input type="number" step="0.001" min="0" id="poids_<?php echo $taille; ?>" name="poids[<?php echo $taille; ?>]" class="form-control" placeholder="Poids en kg" required>
+                                                        </td>
+                                                    <?php } else { ?>
+                                                        <!-- Cellule vide pour garder l'alignement -->
+                                                        <td></td>
+                                                    <?php } ?>
+                                                <?php } ?>
+                                            </tr>
+
+                                            <!-- Ligne pour les champs de quantité -->
+                                            <tr>
+                                                <?php foreach ($quantities_by_size as $taille => $quantite) { ?>
+                                                    <?php if ($quantite > 0) { ?>
+                                                        <td>
+                                                            <label for="quantite_<?php echo $taille; ?>">Quantité du colis:</label>
+                                                            <input type="number" id="quantite_<?php echo $taille; ?>" name="quantite_colis[<?php echo $taille; ?>]" class="form-control" placeholder="Quantité" required>
+                                                        </td>
+                                                    <?php } else { ?>
+                                                        <!-- Cellule vide pour garder l'alignement -->
+                                                        <td></td>
+                                                    <?php } ?>
+                                                <?php } ?>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="text-end mt-3">
+                                        <button type="submit" class="btn btn-primary" >Enregistrer</button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php } ?>
+                    <?php } ?>
+                </tbody>
+            </table>
         <?php } ?>
+        <div class="row">
+        <div class="drop-down">
+            <label for="cartons_param">Paramètres des cartons</label>
+            <div class="select-button-group">
+                <select id="cartons_param" name="cartons_param">
+                    <option value="">Sélectionner un carton</option>
+                </select>
+                <button id="openModalBtn" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-plus-square" viewBox="0 0 16 16">
+                    <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2z"/>
+                    <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        </div>
+       
+    </div>
+    <div class="container mt-5 d-flex">
+         <button type="button" class="btn btn-dark" id="validerButton" style="margin-left: auto; margin-bottom:20px;">
+            Valider
+        </button>
+
+    </div>
+    <div class="modal fade" id="dataEntryModal" tabindex="-1" aria-labelledby="dataEntryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dataEntryModalLabel">Ajouter des Paramètres</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dataEntryForm" action="save_carton_param.php" method="POST">
+                        <div class="mb-3">
+                            <label for="dimensions" class="form-label">Dimensions</label>
+                            <input type="text" class="form-control" id="dimensions" name="dimensions" placeholder="Entrez les dimensions (ex: 20*40*34)" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="poids" class="form-label">Poids</label>
+                            <input type="number" step="0.001" class="form-control" id="poids" name="poids" placeholder="Entrez le poids en kg" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Ajouter</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- jQuery -->
@@ -169,22 +280,120 @@
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
-
-  
+    <?php echo "<script>let idArray = " . json_encode($ids) . ";</script>";?>
     <script>
-        
-        function updateField(idcom,ref_exp,couleur, field, value) {
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", "update_field.php", true);
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    console.log(xhr.responseText); // Optional: Handle response
+        // Exemple de tableau d'IDs que vous avez déjà rempli
+
+        $(document).ready(function() {
+            $('#validerButton').on('click', function() {
+                // Envoyer une requête AJAX pour insérer les IDs
+                let cartonId = $('#cartons_param').val();
+                let nomcli = "<?php echo $first_detail['nomcli']; ?>";
+                let ref_exp = "<?php echo $first_detail['ref_exp']; ?>";
+                // Vérifiez si un carton a bien été sélectionné
+                if (cartonId === "") {
+                    alert("Veuillez sélectionner un carton.");
+                    return; // Annuler si aucun carton n'est sélectionné
                 }
-            };
-            xhr.send(`idcom=${idcom}&ref_exp=${ref_exp}&couleur=${couleur}&field=${field}&value=${value}`);
+                $.ajax({
+                    url: 'insert_packing_list.php', // Le fichier PHP pour insérer les IDs
+                    type: 'POST',
+                    data: { ids: idArray ,carton_id: cartonId,nomcli: nomcli,ref_exp: ref_exp  }, // Envoyer le tableau d'IDs au serveur
+                    success: function(response) {
+                        console.log(response); // Afficher la réponse du serveur
+                        window.location.href = `packing_list.php?nomcli=${encodeURIComponent(nomcli)}&ref_exp=${encodeURIComponent(ref_exp)}`;
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Erreur : " + error);
+                    }
+                });
+            });
+        });
+    </script>
+    <script>
+        function submitForm(event, formRef) {
+            event.preventDefault(); // Empêche la soumission du formulaire normale
+
+            // Sélectionne le formulaire en fonction de l'ID dynamique
+            var formData = $('#form-detail-colis-' + formRef).serialize();
+
+            $.ajax({
+                url: 'add_detail_colis.php',
+                type: 'POST',
+                data: formData,
+                dataType: 'json', // Attente d'une réponse JSON
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alert(response.message); // Message de succès
+                        // Ajouter ici une action supplémentaire, comme rafraîchir une partie de la page
+                    } else {
+                        alert(response.message); // Message d'erreur reçu
+                    }
+                },
+                error: function() {
+                    alert('Une erreur est survenue lors de l\'enregistrement des données.');
+                }
+            });
         }
     </script>
+     <script>
+            // Script pour ouvrir la modale
+            document.getElementById('openModalBtn').addEventListener('click', function () {
+                var myModal = new bootstrap.Modal(document.getElementById('dataEntryModal'));
+                myModal.show();
+            });
+
+            // Script pour gérer le formulaire de saisie de données
+            document.getElementById('dataEntryForm').addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                // Récupérer les valeurs saisies
+                const dimensions = document.getElementById('dimensions').value;
+                const poids = document.getElementById('poids').value;
+
+                // Envoyer les données au serveur via une requête AJAX
+                const xhr = new XMLHttpRequest();
+                xhr.open("POST", "save_carton_param.php", true);
+                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        var myModal = bootstrap.Modal.getInstance(document.getElementById('dataEntryModal'));
+                        myModal.hide();
+                        document.getElementById('dataEntryForm').reset();
+                        loadCartonsParams();
+                    }
+                };
+                xhr.send(`dimensions=${dimensions}&poids=${poids}`);
+            });
+
+            // Recharger les donnees parametre cartons
+            function loadCartonsParams() {
+                const xhr = new XMLHttpRequest();
+                xhr.open("GET", "get_cartons_params.php", true);
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
+                        const cartons = JSON.parse(xhr.responseText);
+                        const cartonsParamSelect = document.getElementById("cartons_param");
+                        cartonsParamSelect.innerHTML = '<option value="">Sélectionner un carton</option>';
+
+                        cartons.forEach(carton => {
+                            const option = document.createElement("option");
+                            option.value = carton.id;
+                            option.text = `${carton.dimension} - ${carton.poids} kg`;
+                            cartonsParamSelect.add(option);
+                        });
+                    }
+                };
+                xhr.send();
+            }
+
+            // Appeler loadCartonsParams() pour initialiser la liste au chargement de la page
+            window.onload = loadCartonsParams;
+
+
+    </script>
+
+
     
     <!-- Script d'initialisation de DataTables
     <script>

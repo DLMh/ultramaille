@@ -1,27 +1,29 @@
 <?php 
-//SELECT p.*, c.idcom FROM packing p JOIN commande_mvt c ON p.idcomdet = c.idcomdet WHERE p.idcom = 176; requete ilaina iaffichena requete liste commande par exp
-
-// SELECT idcom, ref_exp, MIN(date_depot_packing) AS date_depot_packing, MIN(date_prevu_exp) AS date_prevu_exp, MIN(date_depart_usine) AS date_depart_usine, transitaire, desc_coul, GROUP_CONCAT(desc_taille SEPARATOR '-') AS tailles, SUM(quantite) AS total_quantite, nomcli FROM packing GROUP BY idcom, ref_exp, transitaire, desc_coul, nomcli;
-
-
     include("../../admin/databases/db_to_mysql.php");
-    $sql = " SELECT idcom, ref_exp, MIN(date_depot_packing) AS date_depot_packing, MIN(date_prevu_exp) AS date_prevu_exp, MIN(date_depart_usine) AS date_depart_usine,MIN(transitaire) AS transitaire, nomcli FROM packing GROUP BY idcom, ref_exp,nomcli";
+    if(isset($_GET['nomcli'])){
+        $nomcli=$_GET['nomcli'];
+        $ref_exp=$_GET['ref_exp'];
+    }
+$client = mysqli_real_escape_string($conn, $nomcli);
+$exp = mysqli_real_escape_string($conn, $ref_exp);
+
+$sql = "SELECT pl.*, p.desc_coul 
+        FROM `packing_list` AS pl 
+        JOIN packing AS p ON p.id = pl.idpacking 
+        WHERE pl.nomcli = '$client' AND pl.ref_exp = '$exp'";
     $result = mysqli_query($conn, $sql);
 
     $donnees = [];
     if (mysqli_num_rows($result) > 0) {
-        // Parcourir les résultats et stocker dans le tableau
-        while($row = mysqli_fetch_assoc($result)) {
-            $donnees[] = [
-                'ref_exp'    => $row["ref_exp"],
-                'date_depot_packing'  => $row["date_depot_packing"],
-                'date_prevu_exp' => $row["date_prevu_exp"],
-                'date_depart_usine' => $row["date_depart_usine"],
-                'transitaire'=> $row["transitaire"],              
-                'nomcli'       => $row["nomcli"],
-                'idcom'       => $row["idcom"]
 
-            ];
+        while ($row = mysqli_fetch_assoc($result)) {
+                $donnees[] = [
+                    'id' => $row['id'],
+                    'idcarton' => $row['idcarton'],
+                    'idpacking' => $row['idpacking'],
+                    'nomcli' => $row['nomcli'],
+                    'ref_exp' => $row['ref_exp']
+                ];
         }
     } else {
         echo "no rows";
@@ -33,7 +35,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Client </title>
+    <title>Packing list</title>
     <link rel="stylesheet" href="../general/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&amp;display=swap">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -63,7 +65,7 @@
         </div>
     </nav>
     <div class="container mt-5">
-        <a href="suivi_packing.php">
+        <a href="expedition_list.php">
             <button class="btn btn-primary" type="button" style="border-radius: 50%;padding: 8.6px 32px;padding-right: 10px;padding-left: 10px;padding-bottom: 10px;padding-top: 10px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-arrow-left-circle-fill" style="font-size: 41px;">
                         <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"></path>
@@ -72,72 +74,33 @@
         </a>
     </div>
     <div class="container mt-5">
-        <h1 class="text-center">Listes des éxpeditions par client</h1>
-        
-        <!-- Table HTML -->
-        <table id="data" class="table table-striped" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>REF EXP</th>
-                    <th>Date du dépôt packing</th>
-                    <th>Date prévu</th>
-                    <th>Date départ d’usine</th>
-                    <th>Transitaire</th>    
-                    <th>Action</th>
-                </tr>
-            </thead>
-         
-            <tbody>
-                  <?php if (!empty($donnees)) { ?>
+        <h1 class="text-center">Packing List </h1>
+        <?php if (!empty($donnees)) { ?>
+            <table class="table table-bordered" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>id</th>
+                        <th>idcarton</th>
+                        <th>idpacking</th>
+                        <th>client</th>
+                        <th>EXP</th>
+                    </tr>
+                </thead>
+                <tbody>
                     <?php foreach ($donnees as $row) { ?>
                         <tr onclick="window.location.href='#';" style="cursor:pointer;">
-                            <td><?php  echo $row['nomcli']; ?></td>
-                            <td><a href="commandeEXP_lists?idcom=<?php echo $row['idcom']; ?>" style="color: blue;"><?php  echo $row['ref_exp']; ?></a></td>
-                         
-                            <td>
-                                <input 
-                                    class="form-control" type="date" 
-                                    value="<?php echo $row['date_depot_packing']; ?>" 
-                                    style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
-                                    onchange="updateField(<?php echo $row['idcom']; ?>,'<?php  echo $row['ref_exp']; ?>', 'date_depot_packing', this.value)">
-                            </td>
-
-                            <!-- Date Prevu Exp Field -->
-                            <td>
-                                <input 
-                                    class="form-control" type="date" 
-                                    value="<?php echo $row['date_prevu_exp']; ?>" 
-                                    style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
-                                    onchange="updateField(<?php echo $row['idcom']; ?>,'<?php  echo $row['ref_exp']; ?>', 'date_prevu_exp', this.value)">
-                            </td>
-
-                            <!-- Date Depart Usine Field -->
-                            <td>
-                                <input 
-                                    class="form-control" type="date" 
-                                    value="<?php echo $row['date_depart_usine']; ?>" 
-                                    style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
-                                    onchange="updateField(<?php echo $row['idcom']; ?>,'<?php  echo $row['ref_exp']; ?>', 'date_depart_usine', this.value)">
-                            </td>
-
-                            <!-- Transitaire Field -->
-                            <td>
-                                <input 
-                                    class="form-control" type="text" 
-                                    value="<?php echo $row['transitaire']; ?>" 
-                                    style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
-                                    onchange="updateField(<?php echo $row['idcom']; ?>,'<?php  echo $row['ref_exp']; ?>', 'transitaire', this.value)">
-                            </td>
-                            <td><button class="btn btn-dark">....</button></td>
+                          <td><?php echo $row['id'] ;?></td>
+                          <td><?php echo $row['idcarton'] ?></td>
+                          <td><?php echo $row['idpacking'] ?></td>
+                          <td><?php echo $row['nomcli']?></td>
+                          <td><?php echo $row['ref_exp']; ?></td>
                         </tr>
                     <?php }?>
-                <?php } ?>
-            </tbody>
-        
-        </table>
+                </tbody>
+            </table>
+        <?php } ?>
+       
     </div>
-    
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
@@ -149,23 +112,7 @@
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
-  
-    <script>
-        
-        function updateField(idcom,ref_exp, field, value) {
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", "update_field.php", true);
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    console.log(xhr.responseText); // Optional: Handle response
-                }
-            };
-            xhr.send(`idcom=${idcom}&ref_exp=${ref_exp}&field=${field}&value=${value}`);
-        }
-    </script>
-    
-    <!-- Script d'initialisation de DataTables -->
+    <!-- Script d'initialisation de DataTables
     <script>
 
         $(document).ready(function() {
@@ -200,7 +147,7 @@
         });
     });
 
-    </script>
+    </script> -->
      <footer class="bg-primary-gradient">
         <div class="container py-4 py-lg-5">
             <div class="row justify-content-center">
