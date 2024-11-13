@@ -7,9 +7,10 @@
 $client = mysqli_real_escape_string($conn, $nomcli);
 $exp = mysqli_real_escape_string($conn, $ref_exp);
 
-$sql = "SELECT pl.*, p.desc_coul 
+$sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
         FROM `packing_list` AS pl 
         JOIN packing AS p ON p.id = pl.idpacking 
+        JOIN commande_mvt c ON p.idcomdet = c.idcomdet
         WHERE pl.nomcli = '$client' AND pl.ref_exp = '$exp'";
     $result = mysqli_query($conn, $sql);
 
@@ -19,14 +20,45 @@ $sql = "SELECT pl.*, p.desc_coul
         while ($row = mysqli_fetch_assoc($result)) {
                 $donnees[] = [
                     'id' => $row['id'],
-                    'idcarton' => $row['idcarton'],
                     'idpacking' => $row['idpacking'],
+                    'nomcli' => $row['nomcli'],
+                    'ref_exp' => $row['ref_exp'],
+                    'numcde' => $row['numcde'],
+                    'desc_ref' => $row['desc_ref'],
+                    'desc_type' => $row['desc_type'],
+                    'desc_coul' => $row['desc_coul'],
+                    'desc_taille' => $row['desc_taille'],
+                    'quantite' => $row['quantite'],
+                    'idcom' => $row['idcom'],
+                    'idcomdet' => $row['idcomdet']
+                ];
+        }
+        
+    } else {
+        echo "0 information pour ce numéro d'expedition";
+    }
+
+    $sqlColis = "SELECT *
+        FROM detail_colis
+        WHERE nomcli = '$client' AND ref_exp = '$exp'";
+    $resultColis = mysqli_query($conn, $sqlColis);
+
+    $donneesColis = [];
+    if (mysqli_num_rows($resultColis) > 0) {
+
+        while ($row = mysqli_fetch_assoc($resultColis)) {
+                $donneesColis[] = [
+                    'id' => $row['id'],
+                    'refcde' => $row['refcde'],
+                    'poids' => $row['poids'],
+                    'quantite' => $row['quantite'],
+                    'desc_taille' => $row['desc_taille'],
                     'nomcli' => $row['nomcli'],
                     'ref_exp' => $row['ref_exp']
                 ];
         }
     } else {
-        echo "no rows";
+        echo "0 information pour le detail colis";
     }
    
 ?>
@@ -65,41 +97,119 @@ $sql = "SELECT pl.*, p.desc_coul
         </div>
     </nav>
     <div class="container mt-5">
-        <a href="expedition_list.php">
-            <button class="btn btn-primary" type="button" style="border-radius: 50%;padding: 8.6px 32px;padding-right: 10px;padding-left: 10px;padding-bottom: 10px;padding-top: 10px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" viewBox="0 0 16 16" class="bi bi-arrow-left-circle-fill" style="font-size: 41px;">
-                        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zm3.5 7.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H11.5z"></path>
-                </svg>
-            </button>
-        </a>
-    </div>
-    <div class="container mt-5">
         <h1 class="text-center">Packing List </h1>
-        <?php if (!empty($donnees)) { ?>
-            <table class="table table-bordered" style="width:100%">
+        <div class="row">
+            <div class="col-3 d-flex" style="padding: 20px;border: solid 1px;  flex-direction:column;align-items:center;">
+                <label style="font-weight: bold;"><?php echo $client ?></label>
+                <label> <?php echo $exp ?></label>
+            </div>
+        </div>
+        <div class="row mt-3">
+        <?php if (!empty($donnees)) {
+            
+            $quantiteMap = [];
+            foreach ($donneesColis as $colisRow) {
+                $quantiteMap[$colisRow['refcde']][$colisRow['desc_taille']] = $colisRow['quantite'];
+            }
+            // Récupérer toutes les tailles uniques pour les en-têtes
+            // Définir l'ordre personnalisé des tailles
+            $tailleOrder = ['S', 'M', 'L', 'XL', '2XL'];
+
+            // Extraire les tailles uniques à partir des données
+            $tailles = array_unique(array_column($donnees, 'desc_taille'));
+
+            // Trier les tailles en fonction de l'ordre défini, avec les tailles inconnues en dernier
+            usort($tailles, function ($a, $b) use ($tailleOrder) {
+                $posA = array_search($a, $tailleOrder);
+                $posB = array_search($b, $tailleOrder);
+
+                // Si $a ou $b n'est pas dans $tailleOrder, ils obtiennent une position après les tailles définies
+                $posA = ($posA === false) ? count($tailleOrder) : $posA;
+                $posB = ($posB === false) ? count($tailleOrder) : $posB;
+
+                return $posA - $posB;
+            });    
+        ?>
+            
+            <table  class="table table-bordered" style="width:100%">
                 <thead>
                     <tr>
-                        <th>id</th>
-                        <th>idcarton</th>
-                        <th>idpacking</th>
-                        <th>client</th>
-                        <th>EXP</th>
+                        <th>N° CTN</th>
+                        <th>N° Commande</th>
+                        <th>Reference</th>
+                        <th>Designation</th>
+                        <th>Couleur</th>
+                        <th>NBR CTNS(qte/ 1 colis)</th>
+                        <!-- Afficher chaque taille dans un en-tête <th> -->
+                        <?php foreach ($tailles as $taille) : ?>
+                            <th><?php echo $taille; ?></th>
+                        <?php endforeach; ?>
+                        <th>TOTAL</th>
+                        <th>Poids Brut/CTN</th>
+                        <th>Poids Brut total</th>
+                        <th>Poids NET/CTN</th>
+                        <th>Poids NET total</th>
+                        <th>Carton</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($donnees as $row) { ?>
+                    <?php 
+                        $a = 1;
+                        $b = 0;
+                    foreach ($donnees as $row) {
+                        $nbr_carton = 0;
+                        if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
+                            $nbr_carton = round($row['quantite'] / $quantiteMap[$row['desc_ref']][$row['desc_taille']]);
+                        }
+
+                        // Calculer A et B pour cette ligne
+                        $a = $b + 1;
+                        $b = $b + $nbr_carton; 
+                        // Calculer la quantité totale pour chaque référence
+                        ?>
+                        
                         <tr onclick="window.location.href='#';" style="cursor:pointer;">
-                          <td><?php echo $row['id'] ;?></td>
-                          <td><?php echo $row['idcarton'] ?></td>
-                          <td><?php echo $row['idpacking'] ?></td>
-                          <td><?php echo $row['nomcli']?></td>
-                          <td><?php echo $row['ref_exp']; ?></td>
+                            <?php if ($a !== $b ){?>
+                            <td><?php echo "$a à $b"; ?></td>
+                            <?php }else { ?>
+                            <td><?php echo "$b"; ?></td>
+                            <?php }?>
+                            <td><?php echo $row['numcde'] ;?></td>
+                            <td><?php echo $row['desc_ref'] ?></td>
+                            <td><?php echo $row['desc_type'] ?></td>
+                            <td><?php echo $row['desc_coul']?></td>
+                            <td>
+                                <?php
+                                
+                                 if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
+                                        echo $nbr_carton ." (".$quantiteMap[$row['desc_ref']][$row['desc_taille']].")";
+                                    } else {
+                                        echo 'N/A';
+                                    }
+                                ?>
+                            </td>
+                           
+                            <!-- Afficher les quantités pour chaque taille -->
+                            <?php foreach ($tailles as $taille) : ?>
+                                <td>
+                                    <?php 
+                                        echo $row['desc_taille'] === $taille ? $row['quantite'] : '';
+                                    ?>
+                                </td>
+                            <?php endforeach; ?>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
                         </tr>
                     <?php }?>
                 </tbody>
             </table>
         <?php } ?>
        
+        </div>
     </div>
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -112,8 +222,8 @@ $sql = "SELECT pl.*, p.desc_coul
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
 
-    <!-- Script d'initialisation de DataTables
-    <script>
+    <!-- Script d'initialisation de DataTables -->
+    <!-- <script>
 
         $(document).ready(function() {
         $('#data').DataTable({

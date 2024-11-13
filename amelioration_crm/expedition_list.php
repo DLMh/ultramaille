@@ -93,7 +93,7 @@
                     <?php foreach ($donnees as $row) { ?>
                         <tr onclick="window.location.href='#';" style="cursor:pointer;">
                             <td><?php  echo $row['nomcli']; ?></td>
-                            <td><a href="commandeEXP_lists?idcom=<?php echo $row['idcom']; ?>" style="color: blue;"><?php  echo $row['ref_exp']; ?></a></td>
+                            <td><a href="commandeEXP_lists?idcom=<?php echo $row['idcom']; ?>&&exp=<?php  echo $row['ref_exp']; ?>" style="color: blue;"><?php  echo $row['ref_exp']; ?></a></td>
                          
                             <td>
                                 <input 
