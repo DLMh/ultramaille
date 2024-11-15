@@ -12,24 +12,39 @@ if (isset($_POST['ids']) && is_array($_POST['ids']) && isset($_POST['nomcli']) &
     $ids = $_POST['ids'];
     $nomcli = mysqli_real_escape_string($conn, $_POST['nomcli']);
     $ref_exp = mysqli_real_escape_string($conn, $_POST['ref_exp']);
+    
+    $newValues = []; // Pour stocker les nouvelles données à insérer
 
-    // Préparer les valeurs pour chaque combinaison
-    $values = implode(',', array_map(function($id) use ($conn, $nomcli, $ref_exp) {
+    foreach ($ids as $id) {
         $safe_id = mysqli_real_escape_string($conn, $id);
-        return "('$safe_id', '$nomcli', '$ref_exp')";
-    }, $ids));
 
-    // Construction de la requête SQL
-    $sql = "INSERT INTO packing_list (idpacking, nomcli, ref_exp) VALUES $values";
-    // Exécution de la requête
-    if (mysqli_query($conn, $sql)) {
-        echo json_encode(array('status' => 'success', 'message' => 'Les données ont été enregistrés avec succès dans packing_list.'));
+        // Vérifier si la combinaison existe déjà
+        $check_sql = "SELECT 1 FROM packing_list WHERE idpacking = '$safe_id' AND nomcli = '$nomcli' AND ref_exp = '$ref_exp'";
+        $result = mysqli_query($conn, $check_sql);
+
+        if (mysqli_num_rows($result) === 0) {
+            // Ajouter à la liste des nouvelles valeurs
+            $newValues[] = "('$safe_id', '$nomcli', '$ref_exp')";
+        }
+    }
+
+    if (!empty($newValues)) {
+        // Insérer les nouvelles données
+        $values = implode(',', $newValues);
+        $sql = "INSERT INTO packing_list (idpacking, nomcli, ref_exp) VALUES $values";
+        
+        if (mysqli_query($conn, $sql)) {
+            echo json_encode(array('status' => 'success', 'message' => 'Les nouvelles données ont été enregistrées avec succès.'));
+        } else {
+            echo json_encode(array('status' => 'error', 'message' => 'Erreur lors de l\'enregistrement : ' . mysqli_error($conn)));
+        }
     } else {
-        echo json_encode(array('status' => 'error', 'message' => 'Erreur lors de l\'enregistrement des IDs : ' . mysqli_error($conn)));
+        echo json_encode(array('status' => 'info', 'message' => 'Toutes les données existent déjà.'));
+        // Redirection (par exemple, si vous voulez envoyer vers une autre page)
+        // header("Location: /page_packing_list.php");
     }
 } else {
-    echo json_encode(array('status' => 'error', 'message' => 'Données manquantes : IDs ou '));
+    echo json_encode(array('status' => 'error', 'message' => 'Données manquantes : IDs ou autres informations.'));
 }
 
 mysqli_close($conn);
-

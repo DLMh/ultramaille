@@ -354,7 +354,7 @@
                         alert(response.message); // Message d'erreur reçu
                     }
                 },
-              error: function(xhr, status, error) {
+                error: function(xhr, status, error) {
                 console.log("Erreur AJAX : ", error);
                 console.log("Statut : ", status);
                 console.log("Réponse : ", xhr.responseText); // Affiche les erreurs de réponse

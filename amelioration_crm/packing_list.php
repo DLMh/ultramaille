@@ -102,7 +102,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             </div>
         </div>
     </nav>
-    <div class="container mt-5">
+    <div class="container mt-5 ">
         <h1 class="text-center">LISTE DE COLISAGE / Packing List </h1>
         <style>
             .custom-grid {
@@ -118,8 +118,6 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 <label><span style="font-weight: bold;">Tél</span> (261) 20 22 438 15 / (261) 20 22 438 16</label>
                 <label><span style="font-weight: bold;">Fax</span> (261) 20 22 438 14 </label>
                 <label>BP 3298 Antananarivo Madagascar</label>
-                <hr>
-                
             </div>
             <div class="d-flex flex-column" style="align-items: end; ">
                 
@@ -137,7 +135,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
               
             </div>
         </div>
-        <div class="row mt-5">
+        <div class="row mt-2">
             <div class="col-3 d-flex" style="padding: 20px;border: solid 1px;  flex-direction:column;align-items:center;">
                 <label ><span style="font-weight: bold;">Date:</span> <?php echo $dateprevuexp ;?></label>
                 <label> <?php echo $exp ?></label>
