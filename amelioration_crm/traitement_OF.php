@@ -321,6 +321,7 @@ if (!empty($donnees)) {
     $totalcommande = 0;
     $totalokchip = 0;
     $totalprochaineenvoi = 0;
+    $totauxParCouleur = [];
 
     foreach ($donnees as $donnee) {
         $desc_type = $donnee['desc_type'];
@@ -359,6 +360,11 @@ if (!empty($donnees)) {
         $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['qte'] = (int)$qte;
         $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['okprod'] = (int)$okprod;
         $dataByCouleur[$desc_coul][$desc_taille][$idcomdet]['nomokprod'] = $nomokprod;
+          // Calculer la quantité totale pour chaque couleur
+        if (!isset($totauxParCouleur[$desc_coul])) {
+            $totauxParCouleur[$desc_coul] = 0; // Initialiser le total pour cette couleur
+        }
+        $totauxParCouleur[$desc_coul] += $qte; 
 
         // Requête pour récupérer les informations des dépôts
         $sql1 = "SELECT id, desc_coul, qte_depot, desc_taille, idcomdet, nom_depot 
@@ -466,7 +472,7 @@ if (!empty($donnees)) {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;?>
+                                                 <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;$previousTotal = 0;$isFirstOperation = true;$operationTotals = [];?>
                                                 <!-- Affichage des données par opération -->
                                                 <?php foreach ($operations as $operation => $tailles) { ?>
                                                     
@@ -481,7 +487,7 @@ if (!empty($donnees)) {
                                                         <?php } ?>
                                                         <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
                                                         
-                                                            <?php 
+                                                            <!-- <?php 
                                                             
                                                                 // Exemple de calcul en fonction de l'opération
                                                                 if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
@@ -520,7 +526,21 @@ if (!empty($donnees)) {
                                                                 }
 
                                                                 
-                                                            ?>
+                                                            ?> -->
+                                                            
+                                                        <?php
+                                                            // Calcul de l'encours
+                                                            if ($isFirstOperation) {
+                                                                $encours = $Total - ($totauxParCouleur[$couleur] ?? $Total); // Calcul spécifique pour la première opération
+                                                                $isFirstOperation = false; // Marquer la première opération comme traitée
+                                                            } else {
+                                                                $encours = $Total - $previousTotal; // Calcul générique pour les autres opérations
+                                                            }
+                                                            
+                                                            // Mise à jour des totaux pour la prochaine opération
+                                                            $previousTotal = $Total;
+                                                            $operationTotals[$operation] = $Total; // Stocker le total spécifique de cette opération
+                                                        ?>
                                                         <?php if($encours<0){?>
                                                             <td style="background-color: #FF0066;"><?php echo $encours; ?></td>
                                                         <?php }else {?>
@@ -838,6 +858,7 @@ if (!empty($donnees)) {
                                                         <?php
                                                         // Normalisation et comparaison des couleurs et tailles
                                                         $normalizedCouleur = normalizeColor($couleur);
+                                                       
                                                         $normalizedTaille = normalizeSize($taille);
                                                         $packingFound = false;
                                                         $packingValue = 0;
@@ -1154,7 +1175,7 @@ if (!empty($donnees)) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;?>
+                                            <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;$previousTotal = 0;$isFirstOperation = true;$operationTotals = [];?>
                                             <!-- Affichage des données par opération -->
                                             <?php foreach ($operations as $operation => $tailles) { ?>
                                                 
@@ -1167,51 +1188,27 @@ if (!empty($donnees)) {
                                                         <td><?php echo $values['finis1'] ?? 'n/a'; $Total+=$values['finis1'] ?></td> <!-- Valeur finis1 -->
                                                     <?php } ?>
                                                     <td><?php echo $Total ?></td> <!-- Colonne vide pour le total (peut être calculé si nécessaire) -->
-                                                      <?php 
-                                                        
-                                                            // Exemple de calcul en fonction de l'opération
-                                                            if ($operation == 'Tricotage Machine Auto' || $operation=='Tricotage main' ) {
-                                                            
-                                                                if(isset($qte)){
-                                                                    $tricoter=$Total;
-                                                                    $encours = $Total - $totalqte;
-                                                                }else{
-                                                                    $encours = $Total -0;
-                                                                }
+                                                  
+                                                        <?php
+                                                            // Calcul de l'encours
+                                                            if ($isFirstOperation) {
                                                                 
-                                                            } elseif ($operation == 'Mending' || $operation== 'Surfilage panneau') {
-                                                                $totalMending=$Total;
-                                                                $encours = $tricoter - $Total; // Un autre calcul
-                                                        
-                                                            }
-                                                            elseif ($operation == 'Lavage') {
-                                                                $totalLavage = $Total;
-                                                                $encours = $totalLavage - $totalMending; 
+                                                                $encours = $Total - ($totauxParCouleur[$couleur] ?? $Total);  // Calcul spécifique pour la première opération
+                                                                $isFirstOperation = false; // Marquer la première opération comme traitée
+                                                            } else {
+                                                                $encours = $Total - $previousTotal; // Calcul générique pour les autres opérations
                                                             }
                                                             
-                                                            elseif ($operation == 'POSE ETIQUETTE' || $operation == 'Petit_main') {
-                                                                $totalPose=$Total;
-                                                                $encours = $Total - $totalLavage; 
-                                                            }
-                                                            elseif ($op== 'Qc mending') {
-                                                                $totalQC=$Total;
-                                                                $encours = $Total - $totalPose; 
-                                                            }
-
-                                                            elseif ($op== 'Entrée Packing') {
-                                                                $encours = $Total - $totalQC; 
-                                                            }
-                                                            else {
-                                                                $encours = 0;
-                                                            }
-
-                                                            
+                                                            // Mise à jour des totaux pour la prochaine opération
+                                                            $previousTotal = $Total;
+                                                            $operationTotals[$operation] = $Total; // Stocker le total spécifique de cette opération
+                                                            var_dump($operationTotals);
                                                         ?>
                                                         <?php if($encours<0){?>
                                                             <td style="background-color:#FF0066;"><?php echo $encours; ?></td>
                                                         <?php }else {?>
                                                         <td> 
-                                                            <?php echo $encours; ?>
+                                                            <?php echo $encours;  ?>
                                                         </td>
                                                         <?php } ?>
                                                 </tr>

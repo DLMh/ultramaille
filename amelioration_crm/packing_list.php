@@ -15,9 +15,13 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
     $result = mysqli_query($conn, $sql);
 
     $donnees = [];
+    $idcom=0;
+    $dateprevuexp=null;
     if (mysqli_num_rows($result) > 0) {
 
         while ($row = mysqli_fetch_assoc($result)) {
+            $idcom=$row['idcom'];
+            $dateprevuexp=$row['date_prevu_exp'];
                 $donnees[] = [
                     'id' => $row['id'],
                     'idpacking' => $row['idpacking'],
@@ -30,10 +34,10 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     'desc_taille' => $row['desc_taille'],
                     'quantite' => $row['quantite'],
                     'idcom' => $row['idcom'],
+                    'date_prevu_exp'=> $row['date_prevu_exp'],
                     'idcomdet' => $row['idcomdet']
                 ];
         }
-        
     } else {
         echo "0 information pour ce numéro d'expedition";
     }
@@ -60,6 +64,8 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
     } else {
         echo "0 information pour le detail colis";
     }
+    $sqldestinataire="SELECT * FROM `commande` as co  LEFT JOIN `client` as cl ON co.`idcli` = cl.`idclient`  left JOIN `client_livraison` as cliv ON co.`idcli` = cliv.`idclient` LEFT JOIN `prev_ccial` as pv ON pv.`idprev`= co.`idprev` WHERE co.`idcom`=".$idcom;
+    $resultdestinataire = mysqli_query($conn, $sqldestinataire);
    
 ?>
 <!DOCTYPE html>
@@ -97,59 +103,96 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
         </div>
     </nav>
     <div class="container mt-5">
-        <h1 class="text-center">Packing List </h1>
-        <div class="row">
+        <h1 class="text-center">LISTE DE COLISAGE / Packing List </h1>
+        <style>
+            .custom-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(40%, 1fr));
+                gap: 20%;
+            }
+        </style>
+        <div class="row mt-3 custom-grid">
+             <div  style="padding:0px 0px 0px 100px;flex-direction:column;">
+                <label style="font-weight: bold;">EXPEDITEUR</label>
+                <label> ULTRAMAILLE S.A. </label>
+                <label><span style="font-weight: bold;">Tél</span> (261) 20 22 438 15 / (261) 20 22 438 16</label>
+                <label><span style="font-weight: bold;">Fax</span> (261) 20 22 438 14 </label>
+                <label>BP 3298 Antananarivo Madagascar</label>
+                <hr>
+                
+            </div>
+            <div class="d-flex flex-column" style="align-items: end; ">
+                
+                <label style="font-weight: bold;">DESTINATAIRE</label>
+                <label> <?php echo $client ?> </label>
+                <?php if (mysqli_num_rows($resultdestinataire) > 0) { ?>
+                    <select class="form-select form-select-lg mb-3 w-75" name="" id="" style="white-space: normal;"> 
+                        <?php while ($row = mysqli_fetch_assoc($resultdestinataire)) { ?>
+                            <option value="<?php echo $row['adresse_livr'] ?? $row['adr_fact']; ?>">
+                                <?php echo $row['adresse_livr'] ?? $row['adr_fact']; ?>
+                            </option>
+                        <?php } ?>
+                    </select>
+                <?php } ?>
+              
+            </div>
+        </div>
+        <div class="row mt-5">
             <div class="col-3 d-flex" style="padding: 20px;border: solid 1px;  flex-direction:column;align-items:center;">
-                <label style="font-weight: bold;"><?php echo $client ?></label>
+                <label ><span style="font-weight: bold;">Date:</span> <?php echo $dateprevuexp ;?></label>
                 <label> <?php echo $exp ?></label>
             </div>
         </div>
         <div class="row mt-3">
         <?php if (!empty($donnees)) {
             
-            $quantiteMap = [];
-            foreach ($donneesColis as $colisRow) {
-                $quantiteMap[$colisRow['refcde']][$colisRow['desc_taille']] = $colisRow['quantite'];
-            }
-            // Récupérer toutes les tailles uniques pour les en-têtes
-            // Définir l'ordre personnalisé des tailles
-            $tailleOrder = ['S', 'M', 'L', 'XL', '2XL'];
+                $quantiteMap = [];
+                foreach ($donneesColis as $colisRow) {
+                    $quantiteMap[$colisRow['refcde']][$colisRow['desc_taille']] = $colisRow['quantite'];
+                }
+                // Récupérer toutes les tailles uniques pour les en-têtes
+                // Définir l'ordre personnalisé des tailles
+                $tailleOrder = ['S', 'M', 'L', 'XL', '2XL'];
 
-            // Extraire les tailles uniques à partir des données
-            $tailles = array_unique(array_column($donnees, 'desc_taille'));
+                // Extraire les tailles uniques à partir des données
+                $tailles = array_unique(array_column($donnees, 'desc_taille'));
 
-            // Trier les tailles en fonction de l'ordre défini, avec les tailles inconnues en dernier
-            usort($tailles, function ($a, $b) use ($tailleOrder) {
-                $posA = array_search($a, $tailleOrder);
-                $posB = array_search($b, $tailleOrder);
+                // Trier les tailles en fonction de l'ordre défini, avec les tailles inconnues en dernier
+                usort($tailles, function ($a, $b) use ($tailleOrder) {
+                    $posA = array_search($a, $tailleOrder);
+                    $posB = array_search($b, $tailleOrder);
 
-                // Si $a ou $b n'est pas dans $tailleOrder, ils obtiennent une position après les tailles définies
-                $posA = ($posA === false) ? count($tailleOrder) : $posA;
-                $posB = ($posB === false) ? count($tailleOrder) : $posB;
+                    // Si $a ou $b n'est pas dans $tailleOrder, ils obtiennent une position après les tailles définies
+                    $posA = ($posA === false) ? count($tailleOrder) : $posA;
+                    $posB = ($posB === false) ? count($tailleOrder) : $posB;
 
-                return $posA - $posB;
-            });    
+                    return $posA - $posB;
+                });    
         ?>
             
             <table  class="table table-bordered" style="width:100%">
                 <thead>
                     <tr>
-                        <th>N° CTN</th>
-                        <th>N° Commande</th>
-                        <th>Reference</th>
-                        <th>Designation</th>
-                        <th>Couleur</th>
-                        <th>NBR CTNS(qte/ 1 colis)</th>
+                        <th rowspan="2">N° CTN</th>
+                        <th rowspan="2">N° Commande</th>
+                        <th rowspan="2">Reference</th>
+                        <th rowspan="2">Designation</th>
+                        <th rowspan="2">Couleur</th>
+                        <th rowspan="2">NBR CTNS (qte/1 colis)</th>
+                        <th colspan="<?php echo count($tailles); ?>">TAILLE</th> <!-- Utilisation de colspan pour englober toutes les tailles -->
+                        <th rowspan="2">TOTAL</th>
+                        <th rowspan="2">Poids Brut/CTN</th>
+                        <th rowspan="2">Poids Brut total</th>
+                        <th rowspan="2">Poids NET/CTN</th>
+                        <th rowspan="2">Poids NET total</th>
+                        <th rowspan="2">Carton</th>
+                    </tr>
+
+                    <tr>
                         <!-- Afficher chaque taille dans un en-tête <th> -->
                         <?php foreach ($tailles as $taille) : ?>
                             <th><?php echo $taille; ?></th>
                         <?php endforeach; ?>
-                        <th>TOTAL</th>
-                        <th>Poids Brut/CTN</th>
-                        <th>Poids Brut total</th>
-                        <th>Poids NET/CTN</th>
-                        <th>Poids NET total</th>
-                        <th>Carton</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -205,6 +248,45 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             <td></td>
                         </tr>
                     <?php }?>
+                </tbody>
+            </table>
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <td>TOTAL NOMBRE DES PIECES</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            TOTAL NOMBRE DES CARTONS
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            TOTAL POIDS BRUT/KG
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            TOTAL POIDS NET/KG
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            VOLUME /M3
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            REFERENCE DES CARTONS 
+                        </td>
+                        <td></td>
+                    </tr>
+
                 </tbody>
             </table>
         <?php } ?>
@@ -290,4 +372,5 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
     <script src="../general/assets/js/Dark-Mode-Switch-darkmode.js"></script>
     
 </body>
+<?php mysqli_close($conn) ;?>
 </html>
