@@ -146,7 +146,10 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             
                 $quantiteMap = [];
                 foreach ($donneesColis as $colisRow) {
-                    $quantiteMap[$colisRow['refcde']][$colisRow['desc_taille']] = $colisRow['quantite'];
+                    $quantiteMap[$colisRow['refcde']][$colisRow['desc_taille']] = [
+                        'quantite' => $colisRow['quantite'], // Quantité actuelle
+                        'poids' => $colisRow['poids']       // Nouveau poids ajouté
+                    ];
                 }
                 // Récupérer toutes les tailles uniques pour les en-têtes
                 // Définir l'ordre personnalisé des tailles
@@ -199,8 +202,16 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                         $b = 0;
                     foreach ($donnees as $row) {
                         $nbr_carton = 0;
-                        if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
-                            $nbr_carton = round($row['quantite'] / $quantiteMap[$row['desc_ref']][$row['desc_taille']]);
+                        $reste=0;
+                       if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
+                            $quantiteParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['quantite'];
+                            $poidsParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['poids'];
+
+                            $nbr_carton = round($row['quantite'] / $quantiteParCarton);
+                            $reste = $row['quantite'] - ($nbr_carton * $quantiteParCarton);
+
+                            // Vous pouvez maintenant également manipuler le poids total
+                            $poidsTotal = $nbr_carton * $poidsParCarton;
                         }
 
                         // Calculer A et B pour cette ligne
@@ -223,7 +234,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                 <?php
                                 
                                  if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
-                                        echo $nbr_carton ." (".$quantiteMap[$row['desc_ref']][$row['desc_taille']].")";
+                                        echo $nbr_carton ." (".$quantiteParCarton.")";
                                     } else {
                                         echo 'N/A';
                                     }
@@ -240,11 +251,40 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             <?php endforeach; ?>
                             <td></td>
                             <td></td>
-                            <td></td>
+                            <td><?php  echo $row['quantite']*$poidsParCarton?></td>
                             <td></td>
                             <td></td>
                             <td></td>
                         </tr>
+                         <?php 
+                        // Ajouter une ligne pour le reste s'il existe
+                        if ($reste > 0) { 
+                            $b++; // Incrémenter B pour la nouvelle ligne
+                        ?>
+                            <tr onclick="window.location.href='#';" style="cursor:pointer;">
+                                <td><?php echo "$b"; ?></td>
+                                <td><?php echo $row['numcde'] ;?></td>
+                                <td><?php echo $row['desc_ref'] ?></td>
+                                <td><?php echo $row['desc_type'] ?></td>
+                                <td><?php echo $row['desc_coul']?></td>
+                                <td class="bg-warning text-dark">Reste</td>
+                                
+                                <!-- Afficher le reste pour la taille correspondante -->
+                                <?php foreach ($tailles as $taille) : ?>
+                                    <td>
+                                        <?php 
+                                            echo $row['desc_taille'] === $taille ? $reste : '';
+                                        ?>
+                                    </td>
+                                <?php endforeach; ?>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        <?php } ?>
                     <?php }?>
                 </tbody>
             </table>
