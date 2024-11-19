@@ -42,8 +42,8 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
         echo "0 information pour ce numéro d'expedition";
     }
 
-    $sqlColis = "SELECT *
-        FROM detail_colis
+    $sqlColis = "SELECT dc.*, dctn.dimension,dctn.poids as poidscarton
+        FROM detail_colis dc join detail_carton dctn on dc.idcarton=dctn.id 
         WHERE nomcli = '$client' AND ref_exp = '$exp'";
     $resultColis = mysqli_query($conn, $sqlColis);
 
@@ -58,7 +58,9 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     'quantite' => $row['quantite'],
                     'desc_taille' => $row['desc_taille'],
                     'nomcli' => $row['nomcli'],
-                    'ref_exp' => $row['ref_exp']
+                    'ref_exp' => $row['ref_exp'],
+                    'dimension' => $row['dimension'],
+                    'poidscarton' => $row['poidscarton']
                 ];
         }
     } else {
@@ -110,6 +112,30 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 grid-template-columns: repeat(auto-fill, minmax(40%, 1fr));
                 gap: 20%;
             }
+
+            table {
+                border-collapse: collapse;
+                width: 100%;
+            }
+
+            
+            thead.sticky-header tr th {
+                position: sticky;
+                top: 0; /* Fixe les lignes en haut du conteneur */
+                z-index: 2; /* Assure que l'en-tête est au-dessus du contenu */
+                background-color: #fff; /* Assure que l'en-tête reste lisible */
+            }
+
+            thead.sticky-header tr + tr th {
+                position: sticky;
+                top: 35px; /* Ajustez cette valeur à la hauteur réelle de la première ligne */
+                z-index: 1; /* Met une priorité légèrement plus basse pour la deuxième ligne */
+                background-color: #fff; /* Gardez le fond blanc */
+            }
+            tbody.sticky-body {
+                overflow-y: auto;
+            }
+
         </style>
         <div class="row mt-3 custom-grid">
              <div  style="padding:0px 0px 0px 100px;flex-direction:column;">
@@ -147,8 +173,10 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 $quantiteMap = [];
                 foreach ($donneesColis as $colisRow) {
                     $quantiteMap[$colisRow['refcde']][$colisRow['desc_taille']] = [
-                        'quantite' => $colisRow['quantite'], // Quantité actuelle
-                        'poids' => $colisRow['poids']       // Nouveau poids ajouté
+                        'quantite' => $colisRow['quantite'], 
+                        'poids' => $colisRow['poids'],
+                        'dimension' => $colisRow['dimension'],
+                        'poidscarton' => $colisRow['poidscarton']
                     ];
                 }
                 // Récupérer toutes les tailles uniques pour les en-têtes
@@ -170,163 +198,194 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     return $posA - $posB;
                 });    
         ?>
-            
-            <table  class="table table-bordered" style="width:100%">
-                <thead>
-                    <tr>
-                        <th rowspan="2">N° CTN</th>
-                        <th rowspan="2">N° Commande</th>
-                        <th rowspan="2">Reference</th>
-                        <th rowspan="2">Designation</th>
-                        <th rowspan="2">Couleur</th>
-                        <th rowspan="2">NBR CTNS (qte/1 colis)</th>
-                        <th colspan="<?php echo count($tailles); ?>">TAILLE</th> <!-- Utilisation de colspan pour englober toutes les tailles -->
-                        <th rowspan="2">TOTAL</th>
-                        <th rowspan="2">Poids Brut/CTN</th>
-                        <th rowspan="2">Poids Brut total</th>
-                        <th rowspan="2">Poids NET/CTN</th>
-                        <th rowspan="2">Poids NET total</th>
-                        <th rowspan="2">Carton</th>
-                    </tr>
-
-                    <tr>
-                        <!-- Afficher chaque taille dans un en-tête <th> -->
-                        <?php foreach ($tailles as $taille) : ?>
-                            <th><?php echo $taille; ?></th>
-                        <?php endforeach; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                        $a = 1;
-                        $b = 0;
-                    foreach ($donnees as $row) {
-                        $nbr_carton = 0;
-                        $reste=0;
-                       if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
-                            $quantiteParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['quantite'];
-                            $poidsParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['poids'];
-
-                            $nbr_carton = round($row['quantite'] / $quantiteParCarton);
-                            $reste = $row['quantite'] - ($nbr_carton * $quantiteParCarton);
-
-                            // Vous pouvez maintenant également manipuler le poids total
-                            $poidsTotal = $nbr_carton * $poidsParCarton;
-                        }
-
-                        // Calculer A et B pour cette ligne
-                        $a = $b + 1;
-                        $b = $b + $nbr_carton; 
-                        // Calculer la quantité totale pour chaque référence
-                        ?>
-                        
-                        <tr onclick="window.location.href='#';" style="cursor:pointer;">
-                            <?php if ($a !== $b ){?>
-                            <td><?php echo "$a à $b"; ?></td>
-                            <?php }else { ?>
-                            <td><?php echo "$b"; ?></td>
-                            <?php }?>
-                            <td><?php echo $row['numcde'] ;?></td>
-                            <td><?php echo $row['desc_ref'] ?></td>
-                            <td><?php echo $row['desc_type'] ?></td>
-                            <td><?php echo $row['desc_coul']?></td>
-                            <td>
-                                <?php
-                                
-                                 if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
-                                        echo $nbr_carton ." (".$quantiteParCarton.")";
-                                    } else {
-                                        echo 'N/A';
-                                    }
-                                ?>
-                            </td>
-                           
-                            <!-- Afficher les quantités pour chaque taille -->
-                            <?php foreach ($tailles as $taille) : ?>
-                                <td>
-                                    <?php 
-                                        echo $row['desc_taille'] === $taille ? $row['quantite'] : '';
-                                    ?>
-                                </td>
-                            <?php endforeach; ?>
-                            <td></td>
-                            <td></td>
-                            <td><?php  echo $row['quantite']*$poidsParCarton?></td>
-                            <td></td>
-                            <td></td>
-                            <td></td>
+            <div class="row" style="overflow-x: auto; max-height: 750px;">
+                <table  class="table table-bordered" style="width:100%">
+                    <thead class="sticky-header">
+                        <tr>
+                            <th rowspan="2">N° CTN</th>
+                            <th rowspan="2">N° Commande</th>
+                            <th rowspan="2">Reference</th>
+                            <th rowspan="2">Designation</th>
+                            <th rowspan="2">Couleur</th>
+                            <th rowspan="2">NBR CTNS (qte/1 colis)</th>
+                            <th colspan="<?php echo count($tailles); ?>">TAILLE</th> <!-- Utilisation de colspan pour englober toutes les tailles -->
+                            <th rowspan="2">TOTAL</th>
+                            <th rowspan="2">Poids Brut/CTN(kg)</th>
+                            <th rowspan="2">Poids Brut total</th>
+                            <th rowspan="2">Poids NET/CTN(kg)</th>
+                            <th rowspan="2">Poids NET total</th>
+                            <th rowspan="2">Carton</th>
                         </tr>
-                         <?php 
-                        // Ajouter une ligne pour le reste s'il existe
-                        if ($reste > 0) { 
-                            $b++; // Incrémenter B pour la nouvelle ligne
-                        ?>
-                            <tr onclick="window.location.href='#';" style="cursor:pointer;">
+
+                        <tr>
+                            <!-- Afficher chaque taille dans un en-tête <th> -->
+                            <?php foreach ($tailles as $taille) : ?>
+                                <th><?php echo $taille; ?></th>
+                            <?php endforeach; ?>
+                        </tr>
+                    </thead>
+                    <tbody class="sticky-body">
+                        <?php 
+                            $a = 1;
+                            $b = 0;
+                            $totalnbrcarton=0;
+                            $TotalPB=0;
+                            $TotalPN=0;
+                            $TotalPiece=0;
+                            $dimensionCartonSum = [];
+                        foreach ($donnees as $row) {
+                            $PBC=0;
+                            $PNC=0;
+                            $nbr_carton = 0;
+                            $reste=0;
+                            $total=0;
+                            $dimension = isset($quantiteMap[$row['desc_ref']][$row['desc_taille']]['dimension']) 
+                            ? $quantiteMap[$row['desc_ref']][$row['desc_taille']]['dimension'] 
+                            : 'N/A';
+                            $poidsctn= isset($quantiteMap[$row['desc_ref']][$row['desc_taille']]['poidscarton']) 
+                            ? $quantiteMap[$row['desc_ref']][$row['desc_taille']]['poidscarton'] 
+                            : 0;
+                            if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
+                                $quantiteParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['quantite'];
+                                $poidsParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['poids'];
+                                $nbr_carton = round($row['quantite'] / $quantiteParCarton);
+                                $reste = $row['quantite'] - ($nbr_carton * $quantiteParCarton);
+                                $totalnbrcarton+=$nbr_carton;
+                                // Vous pouvez maintenant également manipuler le poids total
+                                $poidsTotal = $nbr_carton * $poidsParCarton;
+                            }
+                       
+                            if (!isset($dimensionCartonSum[$dimension])) {
+                                $dimensionCartonSum[$dimension] = 0; 
+                            }
+                            $dimensionCartonSum[$dimension] += $nbr_carton;
+                            // Calculer A et B pour cette ligne
+                            $a = $b + 1;
+                            $b = $b + $nbr_carton; 
+                            // Calculer la quantité totale pour chaque référence
+                            ?>
+                            
+                            <tr  style="cursor:pointer;">
+                                <?php if ($a !== $b ){?>
+                                <td><?php echo "$a à $b"; ?></td>
+                                <?php }else { ?>
                                 <td><?php echo "$b"; ?></td>
+                                <?php }?>
                                 <td><?php echo $row['numcde'] ;?></td>
                                 <td><?php echo $row['desc_ref'] ?></td>
                                 <td><?php echo $row['desc_type'] ?></td>
                                 <td><?php echo $row['desc_coul']?></td>
-                                <td class="bg-warning text-dark">Reste</td>
-                                
-                                <!-- Afficher le reste pour la taille correspondante -->
+                                <td>
+                                    <?php
+                                    
+                                    if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
+                                            echo $nbr_carton ." (".$quantiteParCarton.")";
+                                        } else {
+                                            echo 'N/A';
+                                        }
+                                    ?>
+                                </td>
+                            
+                                <!-- Afficher les quantités pour chaque taille -->
                                 <?php foreach ($tailles as $taille) : ?>
                                     <td>
                                         <?php 
-                                            echo $row['desc_taille'] === $taille ? $reste : '';
+                                            echo $row['desc_taille'] === $taille ? $row['quantite'] : '';
                                         ?>
                                     </td>
                                 <?php endforeach; ?>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
-                                <td></td>
+                                <?php 
+                                    $PBC= ($row['quantite']*$poidsParCarton)+$poidsctn;
+                                    $PNC= $row['quantite']*$poidsParCarton;
+                                    $TotalPBC=$PBC*$nbr_carton;
+                                    $TotalPNC=$PNC*$nbr_carton;
+                                    $total=$row['quantite']*$nbr_carton;
+                                    $TotalPB+=$TotalPBC;
+                                    $TotalPN+=$TotalPNC;
+                                    $TotalPiece+=$total;
+                                ?>
+                                <td><?php  echo $total ; ?></td>
+                                <td><?php  echo $PBC ; ?></td>
+                                <td><?php  echo $TotalPBC ; ?></td>
+                                <td><?php  echo $PNC;  ?></td>
+                                <td><?php  echo $TotalPNC ; ?></td>
+                                <td><?php echo $dimension; ?></td>
                             </tr>
-                        <?php } ?>
-                    <?php }?>
-                </tbody>
-            </table>
-            <table class="table table-bordered">
-                <tbody>
-                    <tr>
-                        <td>TOTAL NOMBRE DES PIECES</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            TOTAL NOMBRE DES CARTONS
-                        </td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            TOTAL POIDS BRUT/KG
-                        </td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            TOTAL POIDS NET/KG
-                        </td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            VOLUME /M3
-                        </td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            REFERENCE DES CARTONS 
-                        </td>
-                        <td></td>
-                    </tr>
-
-                </tbody>
-            </table>
+                            <?php 
+                            // Ajouter une ligne pour le reste s'il existe
+                            if ($reste > 0) { 
+                                $b++; // Incrémenter B pour la nouvelle ligne
+                            ?>
+                                <tr onclick="window.location.href='#';" style="cursor:pointer;">
+                                    <td><?php echo "$b"; ?></td>
+                                    <td><?php echo $row['numcde'] ;?></td>
+                                    <td><?php echo $row['desc_ref'] ?></td>
+                                    <td><?php echo $row['desc_type'] ?></td>
+                                    <td><?php echo $row['desc_coul']?></td>
+                                    <td class="bg-warning text-dark">Reste</td>
+                                    
+                                    <!-- Afficher le reste pour la taille correspondante -->
+                                    <?php foreach ($tailles as $taille) : ?>
+                                        <td>
+                                            <?php 
+                                                echo $row['desc_taille'] === $taille ? $reste : '';
+                                            ?>
+                                        </td>
+                                    <?php endforeach; ?>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+                            <?php } ?>
+                        <?php }?>
+                    </tbody>
+                </table>
+            </div>
+            <div class="row mt-3">
+                <table class="table table-bordered">
+                    <tbody>
+                        <tr>
+                            <td>TOTAL NOMBRE DES PIECES</td>
+                            <td><?php echo $TotalPiece ;?></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                TOTAL NOMBRE DES CARTONS
+                            </td>
+                            <td><?php echo $totalnbrcarton;?></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                TOTAL POIDS BRUT/KG
+                            </td>
+                            <td> <?php echo $TotalPB ;?></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                TOTAL POIDS NET/KG
+                            </td>
+                            <td> <?php echo $TotalPN ;?></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                VOLUME /M3
+                            </td>
+                            <td></td>
+                        </tr>
+                        <?php foreach ($dimensionCartonSum as $dimension => $totalCartons) { ?>
+                            <tr>
+                                <td>
+                                    REFERENCE DES CARTONS: <?php echo $dimension; ?>
+                                </td>                                
+                                <td><?php echo $totalCartons; ?></td>
+                            </tr>
+                        <?php } ?> 
+                    </tbody>
+                </table>
+            </div>
         <?php } ?>
        
         </div>
