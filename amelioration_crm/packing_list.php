@@ -112,30 +112,6 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 grid-template-columns: repeat(auto-fill, minmax(40%, 1fr));
                 gap: 20%;
             }
-
-            table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-
-            
-            thead.sticky-header tr th {
-                position: sticky;
-                top: 0; /* Fixe les lignes en haut du conteneur */
-                z-index: 2; /* Assure que l'en-tête est au-dessus du contenu */
-                background-color: #fff; /* Assure que l'en-tête reste lisible */
-            }
-
-            thead.sticky-header tr + tr th {
-                position: sticky;
-                top: 35px; /* Ajustez cette valeur à la hauteur réelle de la première ligne */
-                z-index: 1; /* Met une priorité légèrement plus basse pour la deuxième ligne */
-                background-color: #fff; /* Gardez le fond blanc */
-            }
-            tbody.sticky-body {
-                overflow-y: auto;
-            }
-
         </style>
         <div class="row mt-3 custom-grid">
              <div  style="padding:0px 0px 0px 100px;flex-direction:column;">
@@ -198,16 +174,16 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     return $posA - $posB;
                 });    
         ?>
-            <div class="row" style="overflow-x: auto; max-height: 750px;">
-                <table  class="table table-bordered" style="width:100%">
-                    <thead class="sticky-header">
+            <div class="table-container overflow-auto" style="max-height: 700px;">
+                <table  class="table table-bordered table-hover" style="width:100%">
+                    <thead class="sticky-top bg-white">
                         <tr>
                             <th rowspan="2">N° CTN</th>
                             <th rowspan="2">N° Commande</th>
                             <th rowspan="2">Reference</th>
                             <th rowspan="2">Designation</th>
                             <th rowspan="2">Couleur</th>
-                            <th rowspan="2">NBR CTNS (qte/1 colis)</th>
+                            <th rowspan="2">Nbre Ctn</th>
                             <th colspan="<?php echo count($tailles); ?>">TAILLE</th> <!-- Utilisation de colspan pour englober toutes les tailles -->
                             <th rowspan="2">TOTAL</th>
                             <th rowspan="2">Poids Brut/CTN(kg)</th>
@@ -248,7 +224,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
                                 $quantiteParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['quantite'];
                                 $poidsParCarton = $quantiteMap[$row['desc_ref']][$row['desc_taille']]['poids'];
-                                $nbr_carton = round($row['quantite'] / $quantiteParCarton);
+                                $nbr_carton = $row['quantite'] < $quantiteParCarton ? 1 : floor($row['quantite'] / $quantiteParCarton);
                                 $reste = $row['quantite'] - ($nbr_carton * $quantiteParCarton);
                                 $totalnbrcarton+=$nbr_carton;
                                 // Vous pouvez maintenant également manipuler le poids total
@@ -279,7 +255,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                     <?php
                                     
                                     if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
-                                            echo $nbr_carton ." (".$quantiteParCarton.")";
+                                            echo $nbr_carton;
                                         } else {
                                             echo 'N/A';
                                         }
@@ -290,16 +266,16 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                 <?php foreach ($tailles as $taille) : ?>
                                     <td>
                                         <?php 
-                                            echo $row['desc_taille'] === $taille ? $row['quantite'] : '';
+                                            echo $row['desc_taille'] === $taille ? $quantiteParCarton : '';
                                         ?>
                                     </td>
                                 <?php endforeach; ?>
                                 <?php 
-                                    $PBC= ($row['quantite']*$poidsParCarton)+$poidsctn;
-                                    $PNC= $row['quantite']*$poidsParCarton;
+                                    $total=$quantiteParCarton*$nbr_carton;
+                                    $PBC= ($total*$poidsParCarton)+$poidsctn;
+                                    $PNC= $total*$poidsParCarton;
                                     $TotalPBC=$PBC*$nbr_carton;
-                                    $TotalPNC=$PNC*$nbr_carton;
-                                    $total=$row['quantite']*$nbr_carton;
+                                    $TotalPNC=$PNC*$nbr_carton;   
                                     $TotalPB+=$TotalPBC;
                                     $TotalPN+=$TotalPNC;
                                     $TotalPiece+=$total;
@@ -315,6 +291,10 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             // Ajouter une ligne pour le reste s'il existe
                             if ($reste > 0) { 
                                 $b++; // Incrémenter B pour la nouvelle ligne
+                                $nbrctn=1;
+                                $dimensionCartonSum[$dimension] += $nbrctn;
+                                $totalnbrcarton+=$nbrctn;
+                                $TotalPiece+=$reste*$nbrctn;
                             ?>
                                 <tr onclick="window.location.href='#';" style="cursor:pointer;">
                                     <td><?php echo "$b"; ?></td>
@@ -322,7 +302,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                     <td><?php echo $row['desc_ref'] ?></td>
                                     <td><?php echo $row['desc_type'] ?></td>
                                     <td><?php echo $row['desc_coul']?></td>
-                                    <td class="bg-warning text-dark">Reste</td>
+                                    <td class="bg-warning text-dark"><?php echo $nbrctn ;?></td>
                                     
                                     <!-- Afficher le reste pour la taille correspondante -->
                                     <?php foreach ($tailles as $taille) : ?>
@@ -332,12 +312,12 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                             ?>
                                         </td>
                                     <?php endforeach; ?>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
-                                    <td></td>
+                                    <td><?php echo $reste*$nbrctn ;?></td>
+                                    <td><?php echo ($reste*$poidsParCarton)+$poidsctn ;?></td>
+                                    <td><?php echo (($reste*$poidsParCarton)+$poidsctn)*$nbrctn ;?></td>
+                                    <td><?php echo $reste*$poidsParCarton ; ?></td>
+                                    <td><?php echo ($reste*$poidsParCarton)*$nbrctn ; ?></td>
+                                    <td><?php echo $dimension; ?></td>
                                 </tr>
                             <?php } ?>
                         <?php }?>
@@ -369,20 +349,34 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             </td>
                             <td> <?php echo $TotalPN ;?></td>
                         </tr>
-                        <tr>
-                            <td>
-                                VOLUME /M3
-                            </td>
-                            <td></td>
-                        </tr>
-                        <?php foreach ($dimensionCartonSum as $dimension => $totalCartons) { ?>
+                        
+                        <?php 
+                        $volume=0;
+                        foreach ($dimensionCartonSum as $dimension => $totalCartons) { 
+                           
+                            $dimensionParts = explode('*', $dimension); 
+                            $decimalDimension = 1; 
+                            
+
+                            foreach ($dimensionParts as $part) {
+                                $decimalDimension *= ($part / 100); 
+                             
+                            }
+                         
+                        ?>
                             <tr>
                                 <td>
-                                    REFERENCE DES CARTONS: <?php echo $dimension; ?>
+                                    REFERENCE DES CARTONS: <?php echo $dimension . " (". $decimalDimension . " m³)"; ?>
                                 </td>                                
-                                <td><?php echo $totalCartons; ?></td>
+                                <td><?php echo $totalCartons; $volume+=$decimalDimension*$totalCartons ?></td>
                             </tr>
                         <?php } ?> 
+                        <tr>
+                            <td>
+                                VOLUME
+                            </td>
+                            <td><?php echo $volume . " m³"; ?></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
