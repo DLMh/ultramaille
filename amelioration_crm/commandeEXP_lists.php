@@ -203,7 +203,7 @@
                                                         <?php foreach ($quantities_by_size as $taille => $quantite) { ?>
                                                             <?php if ($quantite > 0) { ?>
                                                                 <td>
-                                                                    <label for="quantite_<?php echo $taille; ?>">Quantité du colis:</label>
+                                                                    <label for="quantite_<?php echo $taille; ?>">Capacité du colis:</label>
                                                                     <input type="number" id="quantite_<?php echo $taille; ?>" name="quantite_colis[<?php echo $taille; ?>]" class="form-control" placeholder="Quantité" required>
                                                                 </td>
                                                             <?php } else { ?>
