@@ -98,7 +98,7 @@
         </a>
     </div>
     <div class="container mt-5">
-        <h1 class="text-center">Détails pré-packing list </h1>
+        <h1 class="text-center">Paramètrage du packing list </h1>
        <?php
             // Récupère la première entrée pour afficher le nom du client et la référence d'expédition.
             $first_entry = reset($donnees); // Obtient la première entrée dans $donnees

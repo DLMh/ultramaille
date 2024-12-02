@@ -5,7 +5,7 @@
 
 
     include("../../admin/databases/db_to_mysql.php");
-    $sql = " SELECT idcom, ref_exp, MIN(date_depot_packing) AS date_depot_packing, MIN(date_prevu_exp) AS date_prevu_exp, MIN(date_depart_usine) AS date_depart_usine,MIN(transitaire) AS transitaire, nomcli FROM packing GROUP BY idcom, ref_exp,nomcli";
+    $sql = " SELECT idcom,etat, ref_exp, MIN(date_depot_packing) AS date_depot_packing, MIN(date_prevu_exp) AS date_prevu_exp, MIN(date_depart_usine) AS date_depart_usine,MIN(transitaire) AS transitaire, nomcli FROM packing GROUP BY idcom, ref_exp,nomcli,etat";
     $result = mysqli_query($conn, $sql);
 
     $donnees = [];
@@ -19,6 +19,7 @@
                 'date_depart_usine' => $row["date_depart_usine"],
                 'transitaire'=> $row["transitaire"],              
                 'nomcli'       => $row["nomcli"],
+                'etat' => $row["etat"],
                 'idcom'       => $row["idcom"]
 
             ];
@@ -44,6 +45,7 @@
     <link rel="icon" href="../general/image/UTM_logo_sans_fond.png">
       <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-md sticky-top navbar-shrink py-3 navbar-light" id="mainNav">
@@ -84,7 +86,8 @@
                     <th>Date prévu</th>
                     <th>Date départ d’usine</th>
                     <th>Transitaire</th>    
-                    <th>Action</th>
+                    <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
          
@@ -93,8 +96,11 @@
                     <?php foreach ($donnees as $row) { ?>
                         <tr onclick="window.location.href='#';" style="cursor:pointer;">
                             <td><?php  echo $row['nomcli']; ?></td>
-                            <td><a href="commandeEXP_lists?idcom=<?php echo $row['idcom']; ?>&&exp=<?php  echo $row['ref_exp']; ?>" style="color: blue;"><?php  echo $row['ref_exp']; ?></a></td>
-                         
+                            <?php  if($row['etat']==1) { ?>
+                            <td><a href="packingpdf.php?file=PackingList_<?php echo $row['nomcli']; ?>_<?php  echo $row['ref_exp']; ?>.pdf" style="color: green;" ><?php  echo $row['ref_exp']; ?></a></td>
+                            <?php }else{?>
+                                <td><a href="commandeEXP_lists?idcom=<?php echo $row['idcom']; ?>&&exp=<?php  echo $row['ref_exp']; ?>" style="color: blue;"><?php  echo $row['ref_exp']; ?></a></td>
+                            <?php }?>
                             <td>
                                 <input 
                                     class="form-control" type="date" 
@@ -129,7 +135,13 @@
                                     style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
                                     onchange="updateField(<?php echo $row['idcom']; ?>,'<?php  echo $row['ref_exp']; ?>', 'transitaire', this.value)">
                             </td>
-                            <td><button class="btn btn-dark">....</button></td>
+                            <?php  if($row['etat']==1) { ?>
+                            <td>Terminé</td>
+                            <td><a href="packing_list?nomcli=<?php echo $row['nomcli']; ?>&ref_exp=<?php echo $row['ref_exp']; ?>"><i class="fa fa-edit text-warning"></i></a></td>
+                            <?php }else{?>
+                            <td>Non terminé</td>
+                            <td><a></a></td>
+                            <?php }?>
                         </tr>
                     <?php }?>
                 <?php } ?>
