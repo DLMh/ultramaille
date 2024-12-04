@@ -588,12 +588,31 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     <div class="card">
                         <div class="card-body" style="display:flex;justify-content:center;">
                             <div>
-                                <button class="btn btn-outline-dark rounded-0 valider-btn"  data-ref-exp="<?php echo $exp;?>"  
-                                data-nomcli="<?php echo $client;?>">Valider</button>
-                                <button  class="btn btn-outline-info rounded-0" onclick="exportToPDF()">
+                                <button 
+                                    class="btn btn-outline-dark rounded-0 valider-btn" 
+                                    data-ref-exp="<?php echo $exp;?>"  
+                                    data-nomcli="<?php echo $client;?>" 
+                                    onclick="handleValidation()">Valider
+                                </button>
+                                
+                                <button  
+                                    class="btn btn-outline-info rounded-0" 
+                                    onclick="exportToPDF(); handlePDFExport();">
                                     Exporter en PDF
                                 </button>
-                                <button class="btn btn-outline-primary rounded-0 " onclick="exportToExcel()">Exporter en excel</button>
+                                
+                                <button 
+                                    class="btn btn-outline-primary rounded-0" 
+                                    onclick="exportToExcel()">
+                                    Exporter en Excel
+                                </button>
+                                
+                                <a 
+                                    href="expedition_list.php" 
+                                    class="btn btn-outline-secondary rounded-0  d-none" 
+                                    id="goToExpeditionBtn">
+                                    Aller à la liste d'expédition
+                                </a>
                             </div>
                         
                         </div>
@@ -1333,6 +1352,30 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
 
 
     </script>
+    <script>
+    // Variables pour suivre l'état des actions
+    let isValidated = false;
+    let isPDFExported = false;
+
+    // Fonction appelée lors du clic sur le bouton "Valider"
+    function handleValidation() {
+        isValidated = true;
+        checkConditions();
+    }
+
+    // Fonction appelée lors du clic sur le bouton "Exporter en PDF"
+    function handlePDFExport() {
+        isPDFExported = true;
+        checkConditions();
+    }
+
+    // Vérifie si les deux conditions sont remplies pour afficher le bouton
+    function checkConditions() {
+        if (isValidated && isPDFExported) {
+            document.getElementById('goToExpeditionBtn').classList.remove('d-none');
+        }
+    }
+</script>
 
      <footer class="bg-primary-gradient">
         <div class="container py-4 py-lg-5">
