@@ -158,7 +158,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 }
                 // Récupérer toutes les tailles uniques pour les en-têtes
                 // Définir l'ordre personnalisé des tailles
-                $tailleOrder = ['S', 'M', 'L', 'XL', '2XL'];
+                $tailleOrder = ['XS','S', 'M', 'L', 'XL', '2XL'];
 
                 // Extraire les tailles uniques à partir des données
                 $tailles = array_unique(array_column($donnees, 'desc_taille'));
@@ -493,6 +493,96 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     </tbody>
                 </table>
             </div>
+           <?php
+            $tailleOrder = ['XS', 'S', 'M', 'L', 'XL', '2XL']; // Ordre des tailles défini
+
+            function sortByCustomOrder(array $tailles, array $tailleOrder): array {
+                usort($tailles, function ($a, $b) use ($tailleOrder) {
+                    $posA = array_search($a, $tailleOrder);
+                    $posB = array_search($b, $tailleOrder);
+
+                    // Si une taille n'est pas trouvée, on la place à la fin
+                    $posA = $posA === false ? PHP_INT_MAX : $posA;
+                    $posB = $posB === false ? PHP_INT_MAX : $posB;
+
+                    return $posA <=> $posB;
+                });
+
+                return $tailles;
+            }
+
+            // Regrouper les données par référence et couleur
+            $groupedData = []; // Structure pour regrouper les données
+
+            foreach ($donnees as $r) {
+                $key = $r['desc_ref'] . '|' . $r['desc_coul']; // Clé unique pour chaque combinaison
+
+                if (!isset($groupedData[$key])) {
+                    $groupedData[$key] = [
+                        'numcde' => $r['numcde'],
+                        'desc_type' => $r['desc_type'],
+                        'desc_ref' => $r['desc_ref'],
+                        'desc_coul' => $r['desc_coul'],
+                        'tailles' => [] // Associer tailles à quantités
+                    ];
+                }
+
+                $groupedData[$key]['tailles'][$r['desc_taille']] = $r['quantite']; // Associer la taille à sa quantité
+            }
+
+            // Collecter toutes les tailles uniques
+            $allTailles = [];
+            foreach ($groupedData as $group) {
+                $allTailles = array_merge($allTailles, array_keys($group['tailles']));
+            }
+            $allTailles = array_unique($allTailles); // Supprimer les doublons
+            $allTailles = sortByCustomOrder($allTailles, $tailleOrder); // Trier les tailles selon l'ordre personnalisé
+            ?>
+
+            <div class="row d-none">
+                <h3>RECAPITULATIF DE LA COMMANDE</h3>
+                <table class="table table-bordered" id="recapitulatif">
+                    <thead>
+                        <tr>
+                            <th>N° Commande</th>
+                            <th>Référence</th>
+                            <th>Désignation</th>
+                            <th>Couleur</th>
+                            <?php foreach ($allTailles as $taille): ?>
+                                <th>Taille <?= $taille ?></th>
+                            <?php endforeach; ?>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php  $bigtotal=0;
+                        foreach ($groupedData as $group): ?>
+                        <tr>
+                            <td><?= $group['numcde']; ?></td>
+                            <td><?= $group['desc_ref']; ?></td>
+                            <td><?= $group['desc_type']; ?></td>
+                            <td><?= $group['desc_coul']; ?></td>
+                            <?php
+                            $total = 0;
+
+                            // Parcourir toutes les tailles uniques pour générer les colonnes
+                            foreach ($allTailles as $taille) {
+                                $quantite = $group['tailles'][$taille] ?? 0; // Quantité ou 0 si non défini
+                                echo "<td>" . ($quantite > 0 ? $quantite : '') . "</td>";
+                                $total += $quantite; // Calculer le total pour cette ligne
+                            }
+                            ?>
+                            <td><?= $total; $bigtotal+=$total ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <th colspan="9"></th>
+                        <th><?php echo $bigtotal;?></th>
+                    </tfoot>
+                </table>
+            </div>
+
             <div class="row" >
                 <div class="col mb-4">
                     <div class="card">
@@ -539,7 +629,8 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 // Premier clic
                 firstRow = row;
                 firstRow.style.setProperty("background-color", "red", "important");
-         
+                alert("Première ligne sélectionnée. Sélectionnez une deuxième ligne pour joindre.");
+                console.log(firstRow);
             } else {
                 // Deuxième clic
                 if (row === firstRow) {
@@ -1048,6 +1139,20 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             styles: { fontSize: 10 }
         });
 
+        doc.addPage();
+         // Inclure le tableau récapitulatif
+        const recapitulatif = document.getElementById("recapitulatif");
+        // Ajouter l'intitulé "RECAPITULATIF DE LA COMMANDE"
+        doc.setFontSize(14); // Définir une taille de police plus grande pour le titre
+        doc.text("RECAPITULATIF DE LA COMMANDE", 105, 15, { align: "center" });
+        doc.autoTable({
+            html: recapitulatif,
+            startY: 20, // Commence en haut de la nouvelle page
+            theme: 'grid',
+            headStyles: { fillColor: [41, 128, 185] },
+            styles: { fontSize: 10 }
+        });
+
         const clientName = "<?php echo $client; ?>".replace(/[^a-zA-Z0-9]/g, '_'); // Nettoyer pour éviter les caractères spéciaux
         const expName = "<?php echo $exp; ?>".replace(/[^a-zA-Z0-9]/g, '_');  
         const fileName = `PackingList_${clientName}_${expName}.pdf`;
@@ -1184,6 +1289,17 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
         const recapRows = recapTable.querySelectorAll("tr");
         data.push([]);
         recapRows.forEach((row) => {
+            const rowData = [];
+            row.querySelectorAll("td").forEach((cell) => {
+                rowData.push(cell.textContent.trim());
+            });
+            data.push(rowData);
+        });
+
+        const recapitulatif = document.getElementById("recapitulatif");
+        const recRows = recapitulatif.querySelectorAll("tr");
+        data.push([]);
+        recRows.forEach((row) => {
             const rowData = [];
             row.querySelectorAll("td").forEach((cell) => {
                 rowData.push(cell.textContent.trim());
