@@ -195,7 +195,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             <th rowspan="2">Poids NET/CTN(kg)</th>
                             <th rowspan="2">Poids NET total</th>
                             <th rowspan="2">Carton</th>
-                            <th colspan="2" rowspan="2">Action</th>
+                            <th colspan="3" rowspan="2">Action</th>
                         </tr>
 
                         <tr>
@@ -246,13 +246,14 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                         data-poidsParCarton="<?php echo $poidsParCarton; ?>" 
                                         data-poidsCtn="<?php echo $poidsctn; ?>"
                                         data-dimension="<?= $dimension; ?>" 
+                                        data-numeroCarton="<?php echo $b; ?>"
                                         style="cursor:pointer;">
                                         <td><?php echo "$b"; ?></td>
                                         <td><?php echo $row['numcde']; ?></td>
                                         <td><?php echo $row['desc_ref']; ?></td>
                                         <td><?php echo $row['desc_type']; ?></td>
                                         <td><?php echo $row['desc_coul']; ?></td>
-                                        <td class="bg-warning text-dark"><?php echo $nbrctn; ?></td>
+                                        <td data-nbrctn class="bg-warning text-dark"><?php echo $nbrctn; ?></td>
                                         <!-- Afficher le reste pour la taille correspondante -->
                                         <?php foreach ($tailles as $taille) : ?>
                                             <td class="tall" data-taille="<?= $taille; ?>">
@@ -267,25 +268,26 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                         <td><?php echo $dimension; ?></td>
                                         <td><i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i></td>
                                         <td><i class="fa fa-trash" title="Supprimer" style="color:red;" onclick="removeRow(this)"></i></td>
+                                        <td></td>
                                     </tr>
-                                    <?php
-                                    continue; // Passer directement à la prochaine ligne du tableau
+                            <?php
+                                continue; // Passer directement à la prochaine ligne du tableau
                                 } else {
-                                    $nbr_carton = floor($row['quantite'] / $quantiteParCarton);
-                                    $reste = $row['quantite'] - ($nbr_carton * $quantiteParCarton);
-                                    $totalnbrcarton += $nbr_carton;
+                                        $nbr_carton = floor($row['quantite'] / $quantiteParCarton);
+                                        $reste = $row['quantite'] - ($nbr_carton * $quantiteParCarton);
+                                        $totalnbrcarton += $nbr_carton;
+                                    }
                                 }
-                            }
+                            
                         
-                       
-                            if (!isset($dimensionCartonSum[$dimension])) {
-                                $dimensionCartonSum[$dimension] = 0; 
-                            }
-                            $dimensionCartonSum[$dimension] += $nbr_carton;
-                            // Calculer A et B pour cette ligne
-                            $a = $b + 1;
-                            $b = $b + $nbr_carton; 
-                            // Calculer la quantité totale pour chaque référence
+                                if (!isset($dimensionCartonSum[$dimension])) {
+                                    $dimensionCartonSum[$dimension] = 0; 
+                                }
+                                $dimensionCartonSum[$dimension] += $nbr_carton;
+                                // Calculer A et B pour cette ligne
+                                $a = $b + 1;
+                                $b = $b + $nbr_carton; 
+                                // Calculer la quantité totale pour chaque référence
                             ?>
                             
                             <tr     
@@ -301,7 +303,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                 <td><?php echo $row['desc_ref'] ?></td>
                                 <td><?php echo $row['desc_type'] ?></td>
                                 <td><?php echo $row['desc_coul']?></td>
-                                <td class="carton-count text-dark">
+                                <td data-nbrctn class="carton-count text-dark">
                                     <?php
                                     
                                     if (isset($quantiteMap[$row['desc_ref']][$row['desc_taille']])) {
@@ -367,7 +369,8 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
 
                                 </style>
                                 <td><i class="fa fa-edit" title="Modifier" style="color:grey; cursor:pointer;" ></i></td>
-                                <td><i class="fa fa-plus" title="Ajouter" style="color:grey;"  onclick="addRow(this)"></i></td>
+                                <td><i class="fa fa-plus" title="Ajouter" style="color:grey;"></i></td>
+                                <td></td>
                             </tr>
                             <?php 
                             // Ajouter une ligne pour le reste s'il existe
@@ -384,15 +387,12 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                     data-poidsCtn="<?php echo $poidsctn; ?>"
                                     data-dimension="<?= $dimension; ?>" 
                                     onclick="window.location.href='#';" style="cursor:pointer;">
-                                    <!-- <td>
-                                    <input type="checkbox" class="group-checkbox">         
-                                    </td> -->
-                                    <td><?php echo "$b"; ?></td>
+                                    <td data-numeroCarton><?php echo "$b"; ?></td>
                                     <td><?php echo $row['numcde'] ;?></td>
                                     <td><?php echo $row['desc_ref'] ?></td>
                                     <td><?php echo $row['desc_type'] ?></td>
                                     <td><?php echo $row['desc_coul']?></td>
-                                    <td class="bg-warning text-dark"><?php echo $nbrctn ;?></td>
+                                    <td data-nbrctn class="bg-warning text-dark"><?php echo $nbrctn ;?></td>
                                     
                                     <!-- Afficher le reste pour la taille correspondante -->
                                     <?php foreach ($tailles as $taille) : ?>
@@ -407,9 +407,14 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                     <td data-totalpbc><?php echo $TotalPBC=(($reste*$poidsParCarton)+$poidsctn)*$nbrctn ;$TotalPB+=(($reste*$poidsParCarton)+$poidsctn)*$nbrctn;?></td>
                                     <td data-pnc><?php echo $PNC=$reste*$poidsParCarton ; ?></td>
                                     <td data-totalpnc ><?php echo $TotalPNC=($reste*$poidsParCarton)*$nbrctn ; $TotalPN+=($reste*$poidsParCarton)*$nbrctn;?></td>
-                                    <td ><?php echo $dimension; ?></td>
+                                    <td data-dimension><?php echo $dimension; ?></td>
                                     <td><i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i></td>
                                     <td><i class="fa fa-trash" title="Supprimer" style="color:red;" onclick="removeRow(this)"></i></td>
+                                    <td>
+                                    <i class="fa fa-link" title="Joindre" style="color:blue; cursor:pointer;" 
+                                        onclick="joinRows(this, <?php echo $b; ?>)">
+                                    </i>
+                                    </td>
                                 </tr>
                             <?php } ?>
                         <?php }?>
@@ -426,7 +431,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             <th data-total-final="totalpbc">0</th>
                             <th data-total-final="pnc">0</th>
                             <th data-total-final="totalpnc">0</th>
-                            <th colspan="3"></th>
+                            <th colspan="4"></th>
                         </tr>
                     </tfoot>
                 </table>
@@ -523,7 +528,70 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+   
     <script>
+        let firstRow = null; // Variable pour stocker la première ligne cliquée
+
+        function joinRows(button, numeroCarton) {
+            const row = button.closest("tr"); // Trouver la ligne actuelle
+            
+            if (!firstRow) {
+                // Premier clic
+                firstRow = row;
+                firstRow.style.setProperty("background-color", "red", "important");
+         
+            } else {
+                // Deuxième clic
+                if (row === firstRow) {
+                    alert("Vous ne pouvez pas joindre la même ligne. Réessayez.");
+                    firstRow.style.backgroundColor = ""; // Réinitialiser la couleur
+                    firstRow = null;
+                    return;
+                }
+                
+                // Récupérer les données des deux lignes
+                const pn1 = parseFloat(firstRow.querySelector("[data-pnc]").textContent) || 0;
+                const pn2 = parseFloat(row.querySelector("[data-pnc]").textContent) || 0;
+                const pb2 = parseFloat(row.querySelector("[data-pbc]").textContent) || 0;
+                
+                const nbCarton1 = parseInt(firstRow.querySelector("[data-nbrctn]").textContent) || 0;
+                const numeroCarton1 = firstRow.querySelector("[data-numeroCarton]").textContent || "";
+                const dimension1 = firstRow.dataset.dimension || "Inconnue";
+                  // Recalcul dimension pour le premier clic
+                let decimalDimension1 = recalculateDecimalDimension(dimension1);
+
+                // Appeler la fonction updateTotalNbrCarton pour le premier clic
+                updateTotalNbrCarton(-nbCarton1, decimalDimension1, dimension1);
+                // Calculs
+                const newPn = pn1 + pn2; // Nouveau Poids Net
+                const newPb = pn1 + pb2; // Nouveau Poids Brut
+
+                // Mettre à jour la deuxième ligne
+                row.querySelector("[data-pnc]").textContent = newPn.toFixed(2);
+                row.querySelector("[data-pbc]").textContent = newPb.toFixed(2);
+
+
+                // Vider les valeurs de la première ligne
+                firstRow.querySelectorAll("[data-total],[data-pbc], [data-totalpbc], [data-pnc], [data-totalpnc],[data-dimension]").forEach(cell => {
+                    cell.textContent = " ";
+                });
+                firstRow.querySelector("[data-nbrctn]").textContent = "0"; // Nombre de cartons à 0
+                firstRow.querySelector("[data-numeroCarton]").textContent = ""; // Numéro de carton à 0
+                // Déplacer la première ligne sous la deuxième ligne
+                row.parentNode.insertBefore(firstRow, row.nextSibling);
+
+                // Réinitialiser la couleur et la variable
+                firstRow.style.backgroundColor = ""; 
+                firstRow = null; 
+               
+                updateTotals();
+                alert("Les lignes ont été jointes et déplacées avec succès.");
+            }
+        }
+
+        
+
+
         function updateTotals() {
             const table = document.querySelector('.sticky-body'); // Cible votre tableau
             const totalsRow = document.getElementById('totals-row'); // Ligne des totaux
@@ -541,8 +609,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             // Parcourir chaque ligne visible pour accumuler les valeurs
             const rows = table.querySelectorAll('tr');
             rows.forEach((row) => {
-                if (row.style.display === 'none') return; // Ignorer les lignes masquées
-
+                if (row.style.display === 'none' || parseInt(row.querySelector("[data-nbrctn]").textContent) === 0) return; //ignore ligne
                 // Ajouter les tailles
                 const sizeCells = row.querySelectorAll('td.tall');
                 sizeCells.forEach((cell) => {
@@ -644,12 +711,23 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     rowData.total += value;
                 }
             });
+            console.log("nbrectn",row.querySelector("[data-nbrctn]").innerText);
+            let totalPieces = 0;
+            let PBC = 0;
+            let PNC = 0;
+            let TotalPBC = 0;
+            let TotalPNC = 0;
 
-            const totalPieces = rowData.total * rowData.nbr_carton;
-            const PBC = (totalPieces * rowData.poidsParCarton) + rowData.poidsCtn;
-            const PNC = totalPieces * rowData.poidsParCarton;
-            const TotalPBC = PBC * rowData.nbr_carton;
-            const TotalPNC = PNC * rowData.nbr_carton;
+            if(row.querySelector("[data-nbrctn]").innerText ==="0"){
+                PBC = 0;
+            }else{
+                totalPieces = rowData.total * rowData.nbr_carton;
+                PBC = (totalPieces * rowData.poidsParCarton) + rowData.poidsCtn;
+                PNC = totalPieces * rowData.poidsParCarton;
+                TotalPBC = PBC * rowData.nbr_carton;
+                TotalPNC = PNC * rowData.nbr_carton;
+            }
+            
 
             // Mettre à jour les colonnes correspondantes
             row.querySelector('[data-total]').innerText = totalPieces;
@@ -776,7 +854,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 )} m³, Volume Total = ${currentVolume.toFixed(3)} m³.`
             );
         }
-            function recalculateAB() {
+        function recalculateAB() {
         // Sélectionner toutes les lignes du tableau dans le <tbody> avec la classe "sticky-body"
             const rows = document.querySelectorAll('tbody.sticky-body tr');
 
@@ -1008,140 +1086,43 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 console.error("Erreur réseau :", error);
             });
 
-    }
+        }
     </script>
-    <script>
-        //     document.getElementById('regrouperCartonsBtn').addEventListener('click', () => {
-        //     const checkboxes = document.querySelectorAll('.group-checkbox:checked');
-
-        //     if (checkboxes.length < 2) {
-        //         alert('Veuillez sélectionner au moins deux lignes pour regrouper.');
-        //         return;
-        //     }
-
-        //     const rows = Array.from(checkboxes).map(checkbox => checkbox.closest('tr'));
-        //     const firstRow = rows[0]; // La première ligne sélectionnée
-        //     let totalPNC = 0, totalPBC = 0, totalQuantity = 0, cartonDimensions = new Set();
-
-        //     rows.forEach((row, index) => {
-        //         const nbrCartonCell = row.querySelector('td:nth-child(7)'); // Colonne "nbr carton"
-        //         const poidsBrutCell = row.querySelector('[data-totalpbc]'); // Colonne "poids brut total"
-        //         const poidsNetCell = row.querySelector('[data-totalpnc]'); // Colonne "poids net total"
-        //         const resteCell = row.querySelector('[data-total]'); // Colonne "total (reste)"
-        //         const dimensionCell = row.querySelector('td:nth-child(14)'); // Colonne "dimension carton"
-
-        //         const pbc = poidsBrutCell ? parseFloat(poidsBrutCell.textContent) : 0;
-        //         const pnc = poidsNetCell ? parseFloat(poidsNetCell.textContent) : 0;
-        //         const reste = resteCell ? parseInt(resteCell.textContent) : 0;
-        //         const dimension = dimensionCell ? dimensionCell.textContent.trim() : 'N/A';
-
-        //         if (dimension !== 'N/A') {
-        //             cartonDimensions.add(dimension); // Collecter les dimensions
-        //         }
-
-        //         if (index === 0) {
-        //             // La première ligne conserve ses valeurs
-        //             totalPNC += pnc;
-        //             totalPBC += pbc;
-        //             totalQuantity += reste;
-        //             nbrCartonCell.textContent = '1'; // Nombre de cartons = 1
-        //         } else {
-        //             // Les autres lignes sont vidées
-        //             if (nbrCartonCell) nbrCartonCell.textContent = '0'; // Nombre de cartons = 0
-        //             if (poidsBrutCell) poidsBrutCell.textContent = 'null';
-        //             if (poidsNetCell) poidsNetCell.textContent = 'null';
-        //             if (resteCell) resteCell.textContent = 'null';
-        //             if (dimensionCell) dimensionCell.textContent = ''; // Vider les dimensions
-        //         }
-        //     });
-
-        //     // Mettre à jour les totaux sur la première ligne
-        //     if (firstRow.querySelector('[data-totalpbc]')) {
-        //         firstRow.querySelector('[data-totalpbc]').textContent = totalPBC.toFixed(2); // Total poids brut
-        //     }
-        //     if (firstRow.querySelector('[data-totalpnc]')) {
-        //         firstRow.querySelector('[data-totalpnc]').textContent = totalPNC.toFixed(2); // Total poids net
-        //     }
-        //     if (firstRow.querySelector('[data-total]')) {
-        //         firstRow.querySelector('[data-total]').textContent = totalQuantity; // Total reste
-        //     }
-        //     if (firstRow.querySelector('td:nth-child(14)')) {
-        //         firstRow.querySelector('td:nth-child(14)').textContent = Array.from(cartonDimensions).join(', '); // Dimensions regroupées
-        //     }
-        // });
-
-    </script>
-    <!-- Script d'initialisation de DataTables -->
-    <!-- <script>
-
-        $(document).ready(function() {
-        $('#data').DataTable({
-            paging: true, // Activer la pagination
-            searching: true, // Activer le filtrage
-            ordering: true, // Activer le tri
-            pageLength: 10, // Nombre de lignes par page
-            language: {
-                "sProcessing": "Traitement en cours...",
-                "sLengthMenu": "Afficher _MENU_ éléments",
-                "sZeroRecords": "Aucun résultat trouvé",
-                "sInfo": "Affichage de _START_ à _END_ sur _TOTAL_ éléments",
-                "sInfoEmpty": "Affichage de 0 à 0 sur 0 élément",
-                "sInfoFiltered": "(filtré à partir de _MAX_ éléments au total)",
-                "sInfoPostFix": "",
-                "sSearch": "Rechercher:",
-                "sUrl": "",
-                "sInfoThousands": ",",
-                "sLoadingRecords": "Chargement en cours...",
-                "oPaginate": {
-                    "sFirst": "Premier",
-                    "sLast": "Dernier",
-                    "sNext": "Suivant",
-                    "sPrevious": "Précédent"
-                },
-                "oAria": {
-                    "sSortAscending": ": activer pour trier la colonne par ordre croissant",
-                    "sSortDescending": ": activer pour trier la colonne par ordre décroissant"
-                }
-            }
-        });
-    });
-
-    </script> -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-        // Attacher un événement click à tous les boutons avec la classe .valider-btn
-        document.querySelectorAll('.valider-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                // Récupérer les valeurs des attributs data-*
-                const refExp = button.getAttribute('data-ref-exp');
-                const nomCli = button.getAttribute('data-nomcli');
+            // Attacher un événement click à tous les boutons avec la classe .valider-btn
+            document.querySelectorAll('.valider-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    // Récupérer les valeurs des attributs data-*
+                    const refExp = button.getAttribute('data-ref-exp');
+                    const nomCli = button.getAttribute('data-nomcli');
 
-                if (refExp && nomCli) {
-                    // Envoyer les données au serveur via AJAX
-                    fetch('updatePacking.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ refExp, nomCli }),
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Packing list terminé !');
-                        } else {
-                            alert(`${data.message}`);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Erreur réseau:', error);
-                    });
-                } else {
-                    alert('Les données nécessaires sont manquantes.');
-                }
+                    if (refExp && nomCli) {
+                        // Envoyer les données au serveur via AJAX
+                        fetch('updatePacking.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ refExp, nomCli }),
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Packing list terminé !');
+                            } else {
+                                alert(`${data.message}`);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur réseau:', error);
+                        });
+                    } else {
+                        alert('Les données nécessaires sont manquantes.');
+                    }
+                });
             });
         });
-    });
 
     </script>
     <script>
@@ -1198,22 +1179,17 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             data.push(rowData);
         });
 
-        // Ajouter les totaux
+         // Ajouter les totaux depuis la table HTML idtotauxrecap
+        const recapTable = document.getElementById("idtotauxrecap");
+        const recapRows = recapTable.querySelectorAll("tr");
         data.push([]);
-        data.push(["TOTAL NOMBRE DES PIECES", "<?php echo $TotalPiece; ?>"]);
-        data.push(["TOTAL NOMBRE DES CARTONS", totalCartonsDynamic]);
-        data.push(["TOTAL POIDS BRUT/KG", totalpbc]);
-        data.push(["TOTAL POIDS NET/KG", totalpnc]);
-
-        // Ajouter les références des cartons
-        const dimensions = <?php echo json_encode($dimensionCartonSum); ?>;
-        Object.entries(dimensions).forEach(([dimension, totalCartons]) => {
-            const dimensionParts = dimension.split('*');
-            const decimalDimension = dimensionParts.reduce((acc, part) => acc * (part / 100), 1);
-            data.push([`REFERENCE DES CARTONS: ${dimension} (${decimalDimension.toFixed(3)} m³)`, totalCartons]);
+        recapRows.forEach((row) => {
+            const rowData = [];
+            row.querySelectorAll("td").forEach((cell) => {
+                rowData.push(cell.textContent.trim());
+            });
+            data.push(rowData);
         });
-
-        data.push(["VOLUME", "<?php echo $volume; ?> m³"]);
 
         // Créer le fichier Excel
         const ws = XLSX.utils.aoa_to_sheet(data);
@@ -1241,6 +1217,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
 
 
     </script>
+
      <footer class="bg-primary-gradient">
         <div class="container py-4 py-lg-5">
             <div class="row justify-content-center">
@@ -1267,7 +1244,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             </div>
         </div>
     </footer>
-    <script src="../general/assets/js/aos.min.js"></scrip>
+    <script src="../general/assets/js/aos.min.js"></script>
     <script src="../general/assets/js/bs-init.js"></script>
     <script src="../general/assets/js/bold-and-bright.js"></script>
     <script src="../general/assets/js/Dark-Mode-Switch-darkmode.js"></script>
