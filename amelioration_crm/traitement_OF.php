@@ -1202,7 +1202,7 @@ if (!empty($donnees)) {
                                                             // Mise à jour des totaux pour la prochaine opération
                                                             $previousTotal = $Total;
                                                             $operationTotals[$operation] = $Total; // Stocker le total spécifique de cette opération
-                                                            var_dump($operationTotals);
+                                                            // var_dump($operationTotals);
                                                         ?>
                                                         <?php if($encours<0){?>
                                                             <td style="background-color:#FF0066;"><?php echo $encours; ?></td>

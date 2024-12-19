@@ -187,7 +187,7 @@
                                                         <?php foreach ($quantities_by_size as $taille => $quantite) { ?>
                                                             <?php if ($quantite > 0) { ?>
                                                                 <td>
-                                                                    <label for="poids_<?php echo $taille; ?>">Poids du colis</label>
+                                                                    <label for="poids_<?php echo $taille; ?>">Poids d'une pièce</label>
                                                                     
                                                                     <input type="number" step="0.001" min="0" id="poids_<?php echo $taille; ?>" name="poids[<?php echo $taille; ?>]" class="form-control" placeholder="Poids en kg" required>
                                                                 </td>

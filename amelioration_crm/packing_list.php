@@ -17,11 +17,12 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
     $donnees = [];
     $idcom=0;
     $dateprevuexp=null;
+   
     if (mysqli_num_rows($result) > 0) {
 
         while ($row = mysqli_fetch_assoc($result)) {
             $idcom=$row['idcom'];
-            $dateprevuexp=$row['date_prevu_exp'];
+            $dateprevuexp=$row['date_depot_packing'];
                 $donnees[] = [
                     'id' => $row['id'],
                     'idpacking' => $row['idpacking'],
@@ -34,7 +35,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     'desc_taille' => $row['desc_taille'],
                     'quantite' => $row['quantite'],
                     'idcom' => $row['idcom'],
-                    'date_prevu_exp'=> $row['date_prevu_exp'],
+                    'date_depot_packing'=> $row['date_depot_packing'],
                     'idcomdet' => $row['idcomdet']
                 ];
         }
@@ -85,6 +86,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
     <link rel="stylesheet" href="../general/assets/css/Dark-Mode-Switch.css">
     <link rel="icon" href="../general/image/UTM_logo_sans_fond.png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
       <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 </head>
@@ -195,7 +197,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             <th rowspan="2">Poids NET/CTN(kg)</th>
                             <th rowspan="2">Poids NET total</th>
                             <th rowspan="2">Carton</th>
-                            <th colspan="3" rowspan="2">Action</th>
+                            <th colspan="4" rowspan="2">Action</th>
                         </tr>
 
                         <tr>
@@ -248,7 +250,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                         data-dimension="<?= $dimension; ?>" 
                                         data-numeroCarton="<?php echo $b; ?>"
                                         style="cursor:pointer;">
-                                        <td><?php echo "$b"; ?></td>
+                                        <td data-numeroCarton><?php echo "$b"; ?></td>
                                         <td><?php echo $row['numcde']; ?></td>
                                         <td><?php echo $row['desc_ref']; ?></td>
                                         <td><?php echo $row['desc_type']; ?></td>
@@ -265,10 +267,15 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                         <td data-totalpbc><?php echo $TotalPBC = $PBC * $nbrctn; $TotalPB += $TotalPBC; ?></td>
                                         <td data-pnc><?php echo $PNC = $reste * $poidsParCarton; ?></td>
                                         <td data-totalpnc><?php echo $TotalPNC = $PNC * $nbrctn; $TotalPN += $TotalPNC; ?></td>
-                                        <td><?php echo $dimension; ?></td>
+                                        <td data-dimension><?php echo $dimension; ?></td>
                                         <td><i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i></td>
                                         <td><i class="fa fa-trash" title="Supprimer" style="color:red;" onclick="removeRow(this)"></i></td>
-                                        <td></td>
+                                        <td>
+                                            <i class="fa fa-link" title="Joindre" style="color:blue; cursor:pointer;" 
+                                                onclick="joinRows(this, <?php echo $b; ?>)">
+                                            </i>
+                                        </td>
+                                        <td><i class="fa fa-plus" title="Ajouter" style="color:#17a2b8;" onclick="addRow(this)"></i></td>
                                     </tr>
                             <?php
                                 continue; // Passer directement à la prochaine ligne du tableau
@@ -368,9 +375,8 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
 
 
                                 </style>
-                                <td><i class="fa fa-edit" title="Modifier" style="color:grey; cursor:pointer;" ></i></td>
-                                <td><i class="fa fa-plus" title="Ajouter" style="color:grey;"></i></td>
-                                <td></td>
+                                <td colspan="4"></td>
+                                
                             </tr>
                             <?php 
                             // Ajouter une ligne pour le reste s'il existe
@@ -411,10 +417,11 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                     <td><i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i></td>
                                     <td><i class="fa fa-trash" title="Supprimer" style="color:red;" onclick="removeRow(this)"></i></td>
                                     <td>
-                                    <i class="fa fa-link" title="Joindre" style="color:blue; cursor:pointer;" 
-                                        onclick="joinRows(this, <?php echo $b; ?>)">
-                                    </i>
+                                        <i class="fa fa-link" title="Joindre" style="color:blue; cursor:pointer;" 
+                                            onclick="joinRows(this, <?php echo $b; ?>)">
+                                        </i>
                                     </td>
+                                    <td><i class="fa fa-plus" title="Ajouter" style="color:#17a2b8;" onclick="addRow(this)"></i></td>
                                 </tr>
                             <?php } ?>
                         <?php }?>
@@ -610,8 +617,11 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                 <a 
                                     href="expedition_list.php" 
                                     class="btn btn-outline-secondary rounded-0  d-none" 
-                                    id="goToExpeditionBtn">
-                                    Aller à la liste d'expédition
+                                    id="goToExpeditionBtn"
+                                   
+                                     title="Retour à la liste d'expédition">
+                                <i class="fa-solid fa-house" style="font-size: 1rem;"></i>
+
                                 </a>
                             </div>
                         
@@ -682,10 +692,10 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
 
 
                 // Vider les valeurs de la première ligne
-                firstRow.querySelectorAll("[data-total],[data-pbc], [data-totalpbc], [data-pnc], [data-totalpnc],[data-dimension]").forEach(cell => {
+                firstRow.querySelectorAll("[data-pbc], [data-totalpbc], [data-pnc], [data-totalpnc],[data-dimension]").forEach(cell => {
                     cell.textContent = " ";
                 });
-                firstRow.querySelector("[data-nbrctn]").textContent = "0"; // Nombre de cartons à 0
+                firstRow.querySelector("[data-nbrctn]").textContent = ""; // Nombre de cartons à 0
                 firstRow.querySelector("[data-numeroCarton]").textContent = ""; // Numéro de carton à 0
                 // Déplacer la première ligne sous la deuxième ligne
                 row.parentNode.insertBefore(firstRow, row.nextSibling);
@@ -700,7 +710,6 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
         }
 
         
-
 
         function updateTotals() {
             const table = document.querySelector('.sticky-body'); // Cible votre tableau
@@ -719,7 +728,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             // Parcourir chaque ligne visible pour accumuler les valeurs
             const rows = table.querySelectorAll('tr');
             rows.forEach((row) => {
-                if (row.style.display === 'none' || parseInt(row.querySelector("[data-nbrctn]").textContent) === 0) return; //ignore ligne
+                if (row.style.display === 'none' ) return; //ignore ligne //|| parseInt(row.querySelector("[data-nbrctn]").textContent) === 0 // ilaina ito 
                 // Ajouter les tailles
                 const sizeCells = row.querySelectorAll('td.tall');
                 sizeCells.forEach((cell) => {
@@ -809,6 +818,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 nbr_carton: parseInt(row.querySelector('.bg-warning.text-dark').innerText) || 1,
             };
 
+
             // Mettre à jour les tailles
             const sizeColumns = row.querySelectorAll('td.tall');
             sizeColumns.forEach((cell) => {
@@ -828,8 +838,9 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             let TotalPBC = 0;
             let TotalPNC = 0;
 
-            if(row.querySelector("[data-nbrctn]").innerText ==="0"){
+            if(row.querySelector("[data-nbrctn]").innerText ===""){
                 PBC = 0;
+                totalPieces = rowData.total * rowData.nbr_carton;
             }else{
                 totalPieces = rowData.total * rowData.nbr_carton;
                 PBC = (totalPieces * rowData.poidsParCarton) + rowData.poidsCtn;
@@ -918,6 +929,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
 
                 if (specificTotalCartonsElement) {
                     let currentTotalRef = parseInt(specificTotalCartonsElement.getAttribute('data-totalcartons'), 10) || 0;
+                    console.log('totalcarton avant',currentTotalRef);
 
                     // Mettre à jour le total des cartons pour cette dimension
                     currentTotalRef += deltaNbrCtn;
@@ -928,7 +940,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     // Mettre à jour l'attribut et le texte
                     specificTotalCartonsElement.setAttribute('data-totalcartons', currentTotalRef);
                     specificTotalCartonsElement.textContent = currentTotalRef;
-                    console.log(currentTotalRef);
+                    console.log('ity',currentTotalRef);
                 }
             } else {
                 console.warn(`Aucune ligne avec data-dimensionrecap="${dimension}" trouvée.`);
@@ -1046,41 +1058,6 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             // Implémentez ici une logique pour précharger des données si nécessaire
         });
 
-      
-
-        function addRow(addButton) {
-            // Trouver la ligne parente
-            const currentRow = addButton.closest('tr');
-            const table = document.getElementById('packingListTable').querySelector('tbody');
-
-            // Créer une nouvelle ligne
-            const newRow = document.createElement('tr');
-
-            // Copiez la structure des colonnes
-            newRow.innerHTML = `
-                <td>Nouvelle</td> <!-- ID ou autre colonne -->
-                <td>Numéro de commande</td>
-                <td>Description ref</td>
-                <td>Description type</td>
-                <td>Description couleur</td>
-                <td class="carton-count text-dark">
-                    <input type="number" value="0">
-                </td>
-                ${generateSizeColumns()}
-                <td>0</td> <!-- Total -->
-                <td>0</td> <!-- PBC -->
-                <td>0</td> <!-- Total PBC -->
-                <td>0</td> <!-- PNC -->
-                <td>0</td> <!-- Total PNC -->
-                <td>Dimension</td>
-                <td><i class="fa fa-edit" title="Modifier" style="color:grey; cursor:pointer;" onclick="enableEditing(this)"></i></td>
-                <td><i class="fa fa-plus" title="Ajouter" style="color:blue; cursor:pointer;" onclick="addRow(this)"></i></td>
-            `;
-
-            // Ajouter la nouvelle ligne après la ligne actuelle
-            table.appendChild(newRow);
-        }
-
         function generateSizeColumns() {
             // Utiliser le tableau 'tailles' passé depuis PHP
             return tailles.map(taille => `
@@ -1096,7 +1073,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
         const { jsPDF } = window.jspdf;
 
         // Créer un nouveau document PDF
-        const doc = new jsPDF();
+         const doc = new jsPDF({ orientation: "landscape" });
 
         // Ajouter le titre principal
         doc.setFontSize(16);
@@ -1145,10 +1122,10 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
             startY: currentY,
             theme: 'grid',
             headStyles: { fillColor: [41, 128, 185] },
-            styles: { fontSize: 6 }
+            styles: { fontSize: 8 }
         });
 
-       const recapTable = document.getElementById("idtotauxrecap");
+        const recapTable = document.getElementById("idtotauxrecap");
         currentY = doc.lastAutoTable.finalY + 20; // Positionner après le premier tableau
         doc.autoTable({
             html: recapTable,
@@ -1161,16 +1138,51 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
         doc.addPage();
          // Inclure le tableau récapitulatif
         const recapitulatif = document.getElementById("recapitulatif");
+
+        
+        let finalY = 15; // Position de départ pour le texte
+
+        doc.setFontSize(12); // Taille de police pour les sections
+
+        // Encadrer et afficher les informations "DATE" et "N°"
+        const boxWidth = 180; // Largeur commune pour les cadres
+        const boxHeight = 25; // Hauteur du cadre pour DATE et N°
+        const padding = 5; // Espacement interne pour le texte
+
+        // Dessiner le rectangle pour la section DATE et N°
+        doc.rect(15, finalY, boxWidth, boxHeight); // Rectangle
+        doc.text("DATE :", 20, finalY + 7); // Ajouter le texte DATE
+        doc.text("<?php echo $dateprevuexp; ?>", 60, finalY + 7); // Valeur de la date
+        doc.text("N° :", 20, finalY + 17); // Ajouter le texte N°
+        doc.text("<?php echo $exp; ?>", 60, finalY + 17); // Valeur de N°
+
+        finalY += boxHeight + 10; // Mise à jour de finalY pour éviter le chevauchement
+
+        // Encadrer et afficher les informations du DESTINATAIRE
+        const recipientBoxHeight = 40; // Hauteur pour la section DESTINATAIRE
+
+        doc.rect(15, finalY, boxWidth, recipientBoxHeight); // Rectangle
+        doc.text("DESTINATAIRE :", 20, finalY + 7); // Texte DESTINATAIRE
+        doc.text(`Client : ${client}`, 20, finalY + 14); // Ajouter le client
+        doc.text(`Adresse : ${destinataireAdresse}`, 20, finalY + 21); // Ajouter l'adresse
+
+        finalY += recipientBoxHeight + 10; // Mise à jour de finalY pour éviter le chevauchement
+
         // Ajouter l'intitulé "RECAPITULATIF DE LA COMMANDE"
-        doc.setFontSize(14); // Définir une taille de police plus grande pour le titre
-        doc.text("RECAPITULATIF DE LA COMMANDE", 105, 15, { align: "center" });
+        doc.setFontSize(14); // Taille de police pour le titre
+        doc.text("RECAPITULATIF DE LA COMMANDE", 105, finalY, { align: "center" });
+        finalY += 10; // Ajouter un espace avant le tableau
+
+        // Générer le tableau récapitulatif
         doc.autoTable({
             html: recapitulatif,
-            startY: 20, // Commence en haut de la nouvelle page
+            startY: finalY, // Commence après le texte et le titre
             theme: 'grid',
             headStyles: { fillColor: [41, 128, 185] },
             styles: { fontSize: 10 }
         });
+
+
 
         const clientName = "<?php echo $client; ?>".replace(/[^a-zA-Z0-9]/g, '_'); // Nettoyer pour éviter les caractères spéciaux
         const expName = "<?php echo $exp; ?>".replace(/[^a-zA-Z0-9]/g, '_');  
@@ -1353,31 +1365,111 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
 
     </script>
     <script>
-    // Variables pour suivre l'état des actions
-    let isValidated = false;
-    let isPDFExported = false;
+        // Variables pour suivre l'état des actions
+        let isValidated = false;
+        let isPDFExported = false;
 
-    // Fonction appelée lors du clic sur le bouton "Valider"
-    function handleValidation() {
-        isValidated = true;
-        checkConditions();
-    }
-
-    // Fonction appelée lors du clic sur le bouton "Exporter en PDF"
-    function handlePDFExport() {
-        isPDFExported = true;
-        checkConditions();
-    }
-
-    // Vérifie si les deux conditions sont remplies pour afficher le bouton
-    function checkConditions() {
-        if (isValidated && isPDFExported) {
-            document.getElementById('goToExpeditionBtn').classList.remove('d-none');
+        // Fonction appelée lors du clic sur le bouton "Valider"
+        function handleValidation() {
+            isValidated = true;
+            checkConditions();
         }
-    }
-</script>
 
-     <footer class="bg-primary-gradient">
+        // Fonction appelée lors du clic sur le bouton "Exporter en PDF"
+        function handlePDFExport() {
+            isPDFExported = true;
+            checkConditions();
+        }
+
+        // Vérifie si les deux conditions sont remplies pour afficher le bouton
+        function checkConditions() {
+            if (isValidated && isPDFExported) {
+                document.getElementById('goToExpeditionBtn').classList.remove('d-none');
+            }
+        }
+    </script>
+    <script>
+        function addRow(button) {
+            try {
+                // Trouver la ligne actuelle
+                const currentRow = button.closest('tr');
+                const table = currentRow.parentNode;
+
+                // Récupérer les données nécessaires de la ligne actuelle avec des valeurs par défaut
+                const poidsParCarton = currentRow.dataset.poidsparcarton || ''; // Poids par carton
+                const poidsCtn = currentRow.dataset.poidsctn || ''; // Poids carton
+                const dimension = currentRow.dataset.dimension || ''; // Dimensions
+                const numeroCarton = currentRow.querySelector('td[data-numeroCarton]')?.innerText || ''; // Numéro carton
+                const numcde = currentRow.cells[1]?.innerText || ''; // Numéro de commande
+                const descRef = currentRow.cells[2]?.innerText || ''; // Référence
+                const descType = currentRow.cells[3]?.innerText || ''; // Désignation
+                const descCoul = currentRow.cells[4]?.innerText || ''; // Couleur
+                const nbrctn = parseInt(currentRow.querySelector('td[data-nbrctn]')?.innerText) || 0; // Nombre cartons
+                const total = currentRow.querySelector('td[data-total]')?.innerText || ''; // Total
+                const pbc = currentRow.querySelector('td[data-pbc]')?.innerText || ''; // PBC
+                const totalPbc = currentRow.querySelector('td[data-totalpbc]')?.innerText || ''; // Total PBC
+                const pnc = currentRow.querySelector('td[data-pnc]')?.innerText || ''; // PNC
+                const totalPnc = currentRow.querySelector('td[data-totalpnc]')?.innerText || ''; // Total PNC
+
+                // Fonction pour générer les colonnes dynamiques pour les tailles
+                function createSizeColumns(row) {
+                    return [...row.querySelectorAll('td[data-taille]')].map(td => `
+                        <td class='tall' data-taille="${td.dataset.taille}">${td.innerText || ''}</td>`).join('');
+                }
+
+                // Créer une nouvelle ligne
+                const newRow = document.createElement('tr');
+                newRow.dataset.id = Date.now(); // Utilisation d'un timestamp unique pour l'identifiant
+                newRow.dataset.poidsparcarton = poidsParCarton;
+                newRow.dataset.poidsctn = poidsCtn;
+                newRow.dataset.dimension = dimension;
+                newRow.style.cursor = "pointer";
+
+
+                // Construire la nouvelle ligne
+                newRow.innerHTML = `
+                    <td data-numeroCarton>${numeroCarton}</td>
+                    <td>${numcde}</td>
+                    <td>${descRef}</td>
+                    <td>${descType}</td>
+                    <td>${descCoul}</td>
+                    <td data-nbrctn class="bg-warning text-dark">${nbrctn}</td>
+                    ${createSizeColumns(currentRow)}
+                    <td data-total>${total}</td>
+                    <td data-pbc>${pbc}</td>
+                    <td data-totalpbc>${totalPbc}</td>
+                    <td data-pnc>${pnc}</td>
+                    <td data-totalpnc>${totalPnc}</td>
+                    <td data-dimension>${dimension}</td>
+                    <td>
+                        <i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i>
+                    </td>
+                    <td>
+                        <i class="fa fa-trash" title="Supprimer" style="color:red; cursor:pointer;" onclick="removeRow(this)"></i>
+                    </td>
+                    <td>
+                        <i class="fa fa-link" title="Joindre" style="color:blue; cursor:pointer;" 
+                            onclick="joinRows(this, '${numeroCarton}')">
+                        </i>
+                    </td>
+                    <td>
+                        <i class="fa fa-plus" title="Ajouter" style="color:#17a2b8; cursor:pointer;" onclick="addRow(this)"></i>
+                    </td>
+                `;
+
+                // Insérer la nouvelle ligne après la ligne actuelle
+                currentRow.insertAdjacentElement('afterend', newRow);
+                let decimalDimension = recalculateDecimalDimension(dimension);
+                updateTotalNbrCarton(nbrctn, decimalDimension,dimension);
+                updateTotals();
+
+            } catch (error) {
+                console.error("Erreur lors de l'ajout d'une nouvelle ligne :", error);
+            }
+        }
+    </script>
+
+    <footer class="bg-primary-gradient">
         <div class="container py-4 py-lg-5">
             <div class="row justify-content-center">
                 <div class="col-sm-4 col-md-3 text-center text-lg-start d-flex flex-column">

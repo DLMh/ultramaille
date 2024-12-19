@@ -75,22 +75,32 @@
     </div>
     <div class="container mt-5">
         <h1 class="text-center">Listes des éxpeditions par client</h1>
+        <div style="text-align: left; margin-bottom: 10px;">
+            <select id="yearFilter" class="form-select" style="width: 250px; display: inline-block;">
+                <option value="">Toutes les années</option>
+                <?php 
+                    $currentYear = 2022;//date("Y")
+                    $endYear = 2050;
+                    for ($year = $currentYear; $year <= $endYear; $year++) { ?>
+                        <option value="<?php echo $year; ?>"><?php echo $year; ?></option>
+                <?php } ?>
+            </select>
+        </div>
         
         <!-- Table HTML -->
-        <table id="data" class="table table-striped" style="width:100%">
+        <table  id="data" class="table table-striped" style="width:100%">
             <thead>
                 <tr>
                     <th>Client</th>
                     <th>REF EXP</th>
-                    <th>Date du dépôt packing</th>
-                    <th>Date prévu</th>
-                    <th>Date départ d’usine</th>
+                    <th>Date dépôt (Packing)</th>
+                    <th>Date prévue</th>
+                    <th>Date départ usine</th>
                     <th>Transitaire</th>    
                     <th>Status</th>
                     <th></th>
                 </tr>
-            </thead>
-         
+            </thead>     
             <tbody>
                   <?php if (!empty($donnees)) { ?>
                     <?php foreach ($donnees as $row) { ?>
@@ -177,13 +187,12 @@
         }
     </script>
     
-    <!-- Script d'initialisation de DataTables -->
-    <script>
-
-        $(document).ready(function() {
-        $('#data').DataTable({
+   <script>
+    $(document).ready(function () {
+        // Initialisation de DataTables
+        var table = $('#data').DataTable({
             paging: true, // Activer la pagination
-            searching: true, // Activer le filtrage
+            searching: true, // Activer la recherche
             ordering: true, // Activer le tri
             pageLength: 10, // Nombre de lignes par page
             language: {
@@ -193,26 +202,38 @@
                 "sInfo": "Affichage de _START_ à _END_ sur _TOTAL_ éléments",
                 "sInfoEmpty": "Affichage de 0 à 0 sur 0 élément",
                 "sInfoFiltered": "(filtré à partir de _MAX_ éléments au total)",
-                "sInfoPostFix": "",
                 "sSearch": "Rechercher:",
-                "sUrl": "",
-                "sInfoThousands": ",",
-                "sLoadingRecords": "Chargement en cours...",
                 "oPaginate": {
                     "sFirst": "Premier",
                     "sLast": "Dernier",
                     "sNext": "Suivant",
                     "sPrevious": "Précédent"
-                },
-                "oAria": {
-                    "sSortAscending": ": activer pour trier la colonne par ordre croissant",
-                    "sSortDescending": ": activer pour trier la colonne par ordre décroissant"
                 }
             }
         });
-    });
 
-    </script>
+        // Gestion du filtre par année
+        $('#yearFilter').on('change', function () {
+            var selectedYear = $(this).val(); // Année sélectionnée
+            if (selectedYear) {
+                table.rows().every(function () {
+                    var dateInput = $(this.node()).find('input[type="date"]').val(); // Récupérer la valeur de l'input date
+                    var rowYear = dateInput ? new Date(dateInput).getFullYear().toString() : ''; // Extraire l'année
+                    if (rowYear === selectedYear) {
+                        $(this.node()).show(); // Afficher la ligne
+                    } else {
+                        $(this.node()).hide(); // Masquer la ligne
+                    }
+                });
+            } else {
+                table.rows().every(function () {
+                    $(this.node()).show(); // Afficher toutes les lignes si aucune année n'est sélectionnée
+                });
+            }
+        });
+    });
+</script>
+
      <footer class="bg-primary-gradient">
         <div class="container py-4 py-lg-5">
             <div class="row justify-content-center">
