@@ -69,6 +69,9 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
     }
     $sqldestinataire="SELECT * FROM `commande` as co  LEFT JOIN `client` as cl ON co.`idcli` = cl.`idclient`  left JOIN `client_livraison` as cliv ON co.`idcli` = cliv.`idclient` LEFT JOIN `prev_ccial` as pv ON pv.`idprev`= co.`idprev` WHERE co.`idcom`=".$idcom;
     $resultdestinataire = mysqli_query($conn, $sqldestinataire);
+
+    $sqltypeCarton= "SELECT * FROM `detail_carton`";
+    $restypeCarton=mysqli_query($conn, $sqltypeCarton);
    
 ?>
 <!DOCTYPE html>
@@ -251,7 +254,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                         data-numeroCarton="<?php echo $b; ?>"
                                         style="cursor:pointer;">
                                         <td data-numeroCarton><?php echo "$b"; ?></td>
-                                        <td><?php echo $row['numcde']; ?></td>
+                                        <td><?php echo $row['numcde']; ?> </td>
                                         <td><?php echo $row['desc_ref']; ?></td>
                                         <td><?php echo $row['desc_type']; ?></td>
                                         <td><?php echo $row['desc_coul']; ?></td>
@@ -267,7 +270,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                         <td data-totalpbc><?php echo $TotalPBC = $PBC * $nbrctn; $TotalPB += $TotalPBC; ?></td>
                                         <td data-pnc><?php echo $PNC = $reste * $poidsParCarton; ?></td>
                                         <td data-totalpnc><?php echo $TotalPNC = $PNC * $nbrctn; $TotalPN += $TotalPNC; ?></td>
-                                        <td data-dimension><?php echo $dimension; ?></td>
+                                        <td data-dimension class="dimension-cell"><?php echo $dimension; ?></td>
                                         <td><i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i></td>
                                         <td><i class="fa fa-trash" title="Supprimer" style="color:red;" onclick="removeRow(this)"></i></td>
                                         <td>
@@ -413,7 +416,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                                     <td data-totalpbc><?php echo $TotalPBC=(($reste*$poidsParCarton)+$poidsctn)*$nbrctn ;$TotalPB+=(($reste*$poidsParCarton)+$poidsctn)*$nbrctn;?></td>
                                     <td data-pnc><?php echo $PNC=$reste*$poidsParCarton ; ?></td>
                                     <td data-totalpnc ><?php echo $TotalPNC=($reste*$poidsParCarton)*$nbrctn ; $TotalPN+=($reste*$poidsParCarton)*$nbrctn;?></td>
-                                    <td data-dimension><?php echo $dimension; ?></td>
+                                    <td data-dimension  class="dimension-cell"><?php echo $dimension; ?></td>
                                     <td><i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i></td>
                                     <td><i class="fa fa-trash" title="Supprimer" style="color:red;" onclick="removeRow(this)"></i></td>
                                     <td>
@@ -426,6 +429,50 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                             <?php } ?>
                         <?php }?>
                     </tbody>
+                   <!-- Modal -->
+                    <div class="modal fade" id="cartonModal" tabindex="-1" aria-labelledby="cartonModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="cartonModalLabel">Modifier les dimensions du carton</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- Affichage de l'ID du carton -->
+                                    <p><strong>ID du Carton :</strong> <span id="cartonId" class="text-primary"></span></p>
+
+                                    <!-- Stockage de l'ID en input caché -->
+                                    <input type="hidden" id="cartonIdHidden">
+
+                                    <!-- Sélecteur de dimension -->
+                                    <label for="cartonSelect" class="form-label">Choisissez une dimension :</label>
+                                    <?php if (mysqli_num_rows($restypeCarton) > 0) { ?>
+                                        <select id="cartonSelect" class="form-select">
+                                            <?php while ($rowCarton = mysqli_fetch_assoc($restypeCarton)) { ?>
+                                                <option value="<?php echo $rowCarton['dimension']; ?>">
+                                                    <?php echo $rowCarton['dimension']; ?>
+                                                </option>
+                                            <?php } ?>
+                                        </select>
+                                    <?php } ?>
+
+                                    <!-- Affichage de la dimension sélectionnée -->
+                                    <p class="mt-3"><strong>Dimension :</strong> <span id="selectedDimension" class="text-success"></span></p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-dark" data-bs-dismiss="modal">
+                                        <i class="fas fa-times"></i> Annuler
+                                    </button>
+                                    <button type="button" class="btn btn-primary" id="validateButton">
+                                        <i class="fas fa-check"></i> Valider
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
                     <tfoot>
                         <tr id="totals-row">
                             <th colspan="6" style="text-align: right;">Totaux</th>
@@ -1440,7 +1487,7 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                     <td data-totalpbc>${totalPbc}</td>
                     <td data-pnc>${pnc}</td>
                     <td data-totalpnc>${totalPnc}</td>
-                    <td data-dimension>${dimension}</td>
+                    <td data-dimension class="dimension-cell" >${dimension}</td>
                     <td>
                         <i class="fa fa-edit" title="Modifier" style="color:green; cursor:pointer;" onclick="enableEditing(this)"></i>
                     </td>
@@ -1467,6 +1514,123 @@ $sql = "SELECT pl.*, p.* ,c.numcde,c.desc_type,c.desc_ref
                 console.error("Erreur lors de l'ajout d'une nouvelle ligne :", error);
             }
         }
+    </script>
+    <script>
+     document.addEventListener("DOMContentLoaded", function () {
+    let oldDimension = ""; // Stockage de l'ancienne dimension avant modification
+
+    // Gestion du clic sur une cellule contenant la dimension
+    document.querySelectorAll(".dimension-cell").forEach(cell => {
+        cell.addEventListener("click", function () {
+            let row = this.closest("tr"); // Récupère la ligne parente
+            let cartonId = row.getAttribute("data-id"); // ID du carton
+            oldDimension = this.textContent.trim(); // Stocke l'ancienne dimension affichée avant modification
+            // Mise à jour des valeurs dans le modal
+            document.getElementById("cartonId").textContent = cartonId;
+            document.getElementById("cartonIdHidden").value = cartonId;
+            document.getElementById("selectedDimension").textContent = oldDimension;
+            document.getElementById("cartonSelect").value = oldDimension; // Sélectionner l'ancienne valeur
+
+            $("#cartonModal").modal("show");
+        });
+    });
+
+    // Mettre à jour la dimension sélectionnée dans l'affichage du modal
+    document.getElementById("cartonSelect").addEventListener("change", function () {
+        document.getElementById("selectedDimension").textContent = this.options[this.selectedIndex].text;
+    });
+
+    // Validation et mise à jour
+    document.getElementById("validateButton").addEventListener("click", function () {
+        let cartonId = document.getElementById("cartonIdHidden").value;
+        let newDimension = document.getElementById("cartonSelect").value; // Nouvelle dimension sélectionnée
+        let newDimensionText = document.getElementById("cartonSelect").options[document.getElementById("cartonSelect").selectedIndex].text;
+
+        // Trouver la ligne correspondante et mettre à jour la dimension
+        document.querySelectorAll(".dimension-cell").forEach(cell => {
+            let row = cell.closest("tr");
+            if (row.getAttribute("data-id") === cartonId) {
+                row.setAttribute("data-dimension", newDimension);
+                cell.textContent = newDimensionText; // Mise à jour de l'affichage
+            }
+        });
+
+        // Mise à jour du tableau récapitulatif
+        updateRecapTable(oldDimension, newDimension);
+
+        // Fermer le modal
+        $("#cartonModal").modal("hide");
+    });
+
+    // Fonction pour convertir une dimension en valeur décimale
+    function convertToDecimal(dimension) {
+        let parts = dimension.split('*');
+        let decimalValue = 1;
+        parts.forEach(part => {
+            decimalValue *= (parseFloat(part) / 100);
+        });
+        return decimalValue;
+    }
+
+    // Mettre à jour le tableau récapitulatif
+    function updateRecapTable(oldDimension, newDimension) {
+    let oldDecimal = convertToDecimal(oldDimension);
+    let newDecimal = convertToDecimal(newDimension);
+    let volume = 0;
+
+    let oldRow = document.querySelector(`tr[data-dimensionrecap="${oldDimension}"]`);
+    let newRow = document.querySelector(`tr[data-dimensionrecap="${newDimension}"]`);
+    let volumeRow = Array.from(document.querySelectorAll("#idtotauxrecap tbody tr"))
+        .find(row => row.querySelector("td")?.textContent.trim() === "VOLUME");
+
+    // Mise à jour de l'ancienne ligne (Réduction du total ou suppression)
+    if (oldRow) {
+        let oldTotalCartons = parseInt(oldRow.querySelector("[data-totalcartons]").textContent, 10);
+        if (oldTotalCartons > 1) {
+            oldRow.querySelector("[data-totalcartons]").textContent = oldTotalCartons - 1;
+        } else {
+            oldRow.remove(); // Supprime la ligne si elle atteint 0
+        }
+    }
+
+    // Mise à jour de la nouvelle ligne (Ajout ou création)
+    if (newRow) {
+        let newTotalCartons = parseInt(newRow.querySelector("[data-totalcartons]").textContent, 10);
+        newRow.querySelector("[data-totalcartons]").textContent = newTotalCartons + 1;
+    } else {
+        // Création d'une nouvelle ligne si la dimension n'existe pas encore
+        let tableBody = document.getElementById("idtotauxrecap").querySelector("tbody");
+        let newTableRow = document.createElement("tr");
+        newTableRow.setAttribute("data-dimensionrecap", newDimension);
+        newTableRow.setAttribute("data-decimaldimension", newDecimal);
+        newTableRow.innerHTML = `
+            <td>REFERENCE DES CARTONS: ${newDimension} (${newDecimal.toFixed(3)} m³)</td>
+            <td data-totalcartons="1">1</td>
+        `;
+
+        // Insérer la nouvelle ligne juste avant la ligne du volume total
+        if (volumeRow) {
+            tableBody.insertBefore(newTableRow, volumeRow);
+        } else {
+            tableBody.appendChild(newTableRow);
+        }
+    }
+
+    // Recalcul du volume total
+    document.querySelectorAll("tr[data-dimensionrecap]").forEach(row => {
+        let decimalDimension = parseFloat(row.getAttribute("data-decimaldimension"));
+        let totalCartons = parseInt(row.querySelector("[data-totalcartons]").textContent, 10);
+        volume += decimalDimension * totalCartons;
+    });
+
+    // Mise à jour de l'affichage du volume total
+    document.getElementById("volume").textContent = volume.toFixed(3) + " m³";
+}
+
+});
+
+
+
     </script>
 
     <footer class="bg-primary-gradient">
