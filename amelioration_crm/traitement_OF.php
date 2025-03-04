@@ -55,38 +55,40 @@ if ($var != 0) {
         }
 
         while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-            $nom_operation = $row['NomOper'];
-            $finis1 = $row['Finis1'];
-            $finis2 = $row['Finis2'];
-            $retouches = $row['Retouches'];
-            $couleur = $row['Couleur'];
-            $taille = $row['Tailles'];
+            
+            $nom_operation = trim($row['NomOper']);
+            $finis1 = (int) $row['Finis1'];
+            $finis2 = (int) $row['Finis2'];
+            $retouches = (int) $row['Retouches'];
+            $couleur = trim($row['Couleur']);
+            $taille = trim($row['Tailles']);
            
-            // Si l'opération n'existe pas encore dans le tableau, on l'initialise
-            if (!isset($operation_values[$nom_operation])) {
-                $operation_values[$nom_operation] = [];
-            }
-            // Si la couleur n'existe pas encore pour l'opération, on l'ajoute sans somme
-            if (!isset($operation_values[$nom_operation][$couleur])) {
-                $operation_values[$nom_operation][$couleur] = [];
-            }
-            // Si la couleur n'existe pas encore pour l'opération, on l'ajoute sans somme
-            if (!isset($operation_values[$nom_operation][$couleur][$taille])) {
-                $operation_values[$nom_operation][$couleur][$taille] = [
-                    'finis1' => $finis1,
-                    'finis2' => $finis2,
-                    'retouches' => $retouches
-                ];
-            } else {
-             // Si la taille existe déjà pour cette couleur, on met à jour les sommes
-                $operation_values[$nom_operation][$couleur][$taille]['finis1'] += $finis1;
-                $operation_values[$nom_operation][$couleur][$taille]['finis2'] += $finis2;
-                $operation_values[$nom_operation][$couleur][$taille]['retouches'] += $retouches;
-            }
+           // Initialisation de la structure de données si elle n'existe pas encore
+        if (!isset($operation_values[$of])) {
+            $operation_values[$of] = [];
+        }
+        if (!isset($operation_values[$of][$nom_operation])) {
+            $operation_values[$of][$nom_operation] = [];
+        }
+        if (!isset($operation_values[$of][$nom_operation][$couleur])) {
+            $operation_values[$of][$nom_operation][$couleur] = [];
+        }
+        if (!isset($operation_values[$of][$nom_operation][$couleur][$taille])) {
+            $operation_values[$of][$nom_operation][$couleur][$taille] = [
+                'finis1' => 0,
+                'finis2' => 0,
+                'retouches' => 0
+            ];
         }
 
-        sqlsrv_free_stmt($stmt);
+        // Mise à jour des valeurs (évite les interversions)
+        $operation_values[$of][$nom_operation][$couleur][$taille]['finis1'] += $finis1;
+        $operation_values[$of][$nom_operation][$couleur][$taille]['finis2'] += $finis2;
+        $operation_values[$of][$nom_operation][$couleur][$taille]['retouches'] += $retouches;
     }
+
+    sqlsrv_free_stmt($stmt);
+}
 
     // Fermeture de la connexion à la base de données
     sqlsrv_close($con);
@@ -241,7 +243,7 @@ if ($var != 0) {
 $totalqte=0;
 $totalokprod=0;
 if($RefCRM!='VIDE' && $RefCRM!==''){
-    $sql = "SELECT desc_type,numcde,desc_ref,qte,desc_taille,ok_prod,idcomdet,desc_coul,nom_ok_prod FROM `commande_mvt` WHERE idcom=".$RefCRM." and (desc_type='".$RefCde."' OR desc_ref='".$RefCde."')";
+    $sql = "SELECT desc_type,numcde,desc_ref,SUM(qte) as qte,desc_taille,ok_prod,idcomdet,desc_coul,nom_ok_prod FROM `commande_mvt` WHERE idcom=".$RefCRM." and (TRIM(desc_type)='".$RefCde."' OR TRIM(desc_ref)='".$RefCde."') GROUP BY desc_type, numcde, desc_taille, desc_coul, desc_ref";
     // var_dump($sql);
     $result = mysqli_query($conn, $sql);
 
@@ -662,7 +664,6 @@ if (!empty($donnees)) {
                             </div>
                         </div>
                     <?php } ?>
-
                 </div>
                 <div class="row">
                     
@@ -746,7 +747,7 @@ if (!empty($donnees)) {
                                                             data-idcomdet="<?php echo $idcomdet; ?>"  
                                                             onchange="updateOkProd(this)" 
                                                             class="form-control"
-                                                            style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
+                                                            style="max-width: 100%; width: 80px; padding: 5px; margin: 0 auto; border: none; text-align: center; font-size: 14px; display: block;"
                                                         />
                                                     </td>
                                                     <?php $totalOkProd += $details['okprod']; ?>
@@ -1118,17 +1119,38 @@ if (!empty($donnees)) {
     <?php } else { ?>
         <!-- debut  -->
     <?php
-    $grouped_by_color = [];
+   $grouped_by_color = [];
 
-        // Regrouper les opérations par couleur et taille
-        foreach ($operation_values as $operation => $colors) {
+    // Regrouper les opérations par couleur et taille
+    foreach ($operation_values as $of => $operations) { 
+        foreach ($operations as $operation => $colors) {
             foreach ($colors as $couleur => $tailles) {
                 if (!isset($grouped_by_color[$couleur])) {
                     $grouped_by_color[$couleur] = [];
                 }
-                $grouped_by_color[$couleur][$operation] = $tailles; // Regrouper par taille aussi
+                if (!isset($grouped_by_color[$couleur][$operation])) {
+                    $grouped_by_color[$couleur][$operation] = [];
+                }
+                
+                foreach ($tailles as $taille => $values) {
+                    if (!isset($grouped_by_color[$couleur][$operation][$taille])) {
+                        $grouped_by_color[$couleur][$operation][$taille] = [
+                            'finis1' => 0,
+                            'finis2' => 0,
+                            'retouches' => 0
+                        ];
+                    }
+
+                    // Additionner les valeurs au lieu de les fusionner en tableau
+                    $grouped_by_color[$couleur][$operation][$taille]['finis1'] += $values['finis1'] ?? 0;
+                    $grouped_by_color[$couleur][$operation][$taille]['finis2'] += $values['finis2'] ?? 0;
+                    $grouped_by_color[$couleur][$operation][$taille]['retouches'] += $values['retouches'] ?? 0;
+                }
             }
         }
+    }
+
+        
     ?>
 
     
@@ -1152,10 +1174,24 @@ if (!empty($donnees)) {
             <!-- Détails des opérations -->
                 <div class="row">
                     <form id="toggle-operations-form">
-                    <?php foreach ($operation_values as $nom_operation => $values) {?>
-                    <label><input type="checkbox" class="operation-toggle" value="<?php echo $nom_operation ?>" checked> <?php echo $nom_operation ?></label>
-                    <?php }?>
-                </form>
+                        <?php 
+                            $operations_affichees = []; // Tableau pour stocker les opérations déjà affichées
+
+                            foreach ($grouped_by_color as $couleur => $operations) { 
+                                foreach ($operations as $nom_operation => $tailles) { 
+                                    if (!in_array($nom_operation, $operations_affichees)) { 
+                                        $operations_affichees[] = $nom_operation; // Marquer l'opération comme affichée
+                            ?>
+                                        <label>
+                                            <input type="checkbox" class="operation-toggle" value="<?php echo htmlspecialchars($nom_operation); ?>" checked>
+                                            <?php echo htmlspecialchars($nom_operation); ?>
+                                        </label>
+                            <?php 
+                                    } 
+                                } 
+                            } 
+                            ?>
+                    </form>
                     <?php foreach ($grouped_by_color as $couleur => $operations) { ?>
                         <div class="col-md-6 mb-4">
                             <div class="card">
@@ -1167,8 +1203,12 @@ if (!empty($donnees)) {
                                         <thead>
                                             <tr>
                                                 <th>Opération</th> <!-- Colonne pour les noms d'opérations -->
-                                                <?php foreach ($tailles as $taille => $values) { ?>
-                                                    <th><?php echo $taille; ?></th> <!-- Les tailles sont dans une seule ligne, une par colonne -->
+                                                <?php 
+                                                // Récupérer les tailles une seule fois
+                                                $firstOperation = reset($operations);
+                                                $firstTailles = array_keys($firstOperation ?? []);
+                                                foreach ($firstTailles as $taille) { ?>
+                                                    <th><?php echo htmlspecialchars($taille); ?></th> <!-- Les tailles en colonnes -->
                                                 <?php } ?>
                                                 <th>TOTAL</th> <!-- Colonne pour le total -->
                                                 <th>En cours</th>
@@ -1177,8 +1217,8 @@ if (!empty($donnees)) {
                                         <tbody>
                                             <?php   $encours = 0;$totalMending=0;$totalLavage=0;$totalPose=0;$totalQC=0;$tricoter=0;$previousTotal = 0;$isFirstOperation = true;$operationTotals = [];?>
                                             <!-- Affichage des données par opération -->
-                                            <?php foreach ($operations as $operation => $tailles) { ?>
-                                                
+                                            <?php foreach ($operations as $operation => $tailles) { ?>  
+                                                                                             
                                                 <!-- Première ligne pour l'opération -->
                                                 <tr class="operation-row" data-operation="<?php echo $operation; ?>" >
                                                     <?php $Total=0 ?>
@@ -1321,6 +1361,7 @@ if (!empty($donnees)) {
                             </div>
                         </div>
                     <?php } ?>
+                    
                 <div class="row">
                     <div class="col-md-6 mb-4">   
                         <div class="card">   
@@ -1328,10 +1369,11 @@ if (!empty($donnees)) {
                             <?php  $resteEnvoyerArray = [];$tabtotalResteEnvoyer=[];?>
                             <?php if(isset($dataByCouleur)):?>
                                 <?php foreach ($dataByCouleur as $couleur => $tailles): ?>
+                                    
                                     <table class="table table-bordered" id="Situation_<?php echo $couleur ;?>">
                                         <thead>
                                             <tr>
-                                                <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur; ?></th> <!-- Affiche la couleur -->
+                                                <th colspan="<?php echo count($tailles) * 2 + 2; ?>" style="text-align: center;">Couleur: <?php echo $couleur;?></th> <!-- Affiche la couleur -->
                                             </tr>
                                             <tr>
                                                 <th>Situation</th>
@@ -1349,7 +1391,8 @@ if (!empty($donnees)) {
                                             <tr>
                                                 <td>Qte Commande</td>
                                                 <?php $totalQte = 0; ?>
-                                                <?php foreach ($tailles as $taille => $idcomdets): ?>
+                                                <?php foreach ($tailles as $taille => $idcomdets):?>
+                                                    
                                                     <?php foreach ($idcomdets as $idcomdet => $details): ?>
                                                         <td><?php echo $details['qte']; ?></td>
                                                         <?php $totalQte += $details['qte']; ?>
@@ -1405,7 +1448,7 @@ if (!empty($donnees)) {
                                                             data-idcomdet="<?php echo $idcomdet; ?>"  
                                                             onchange="updateOkProd(this)" 
                                                             class="form-control"
-                                                            style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
+                                                              style="max-width: 100%; width: 80px; padding: 5px; margin: 0 auto; border: none; text-align: center; font-size: 14px; display: block;"
                                                         />
                                                         </td>
                                                         <?php $totalOkProd += $details['okprod']; ?>
@@ -1514,28 +1557,34 @@ if (!empty($donnees)) {
                                                         $normalizedTaille = normalizeSize($taille);
                                                         $packingFound = false;
                                                         $packingValue = 0;
+                                                        foreach ($operation_values as $of => $operations) {
+                                                            if (!isset($operations['Entrée Packing'])) {
+                                                                continue; // Si l'opération "Entrée Packing" n'existe pas, on passe à l'OF suivant
+                                                            }
 
-                                                        // Recherche dans les valeurs de "Entrée Packing"
-                                                        foreach ($operation_values['Entrée Packing'] as $packingCouleur => $packingTailles) {
-                                                            $normalizedPackingCouleur = normalizeColor($packingCouleur);
+                                                            foreach ($operations['Entrée Packing'] as $packingCouleur => $packingTailles) {
+                                                                $normalizedPackingCouleur = normalizeColor($packingCouleur);
 
-                                                            // Si les couleurs sont similaires
-                                                            if (areColorsSimilar($normalizedCouleur, $normalizedPackingCouleur)) {
-                                                                foreach ($packingTailles as $packingTaille => $values) {
-                                                                    $normalizedPackingTaille = normalizeSize($packingTaille);
+                                                                // Vérifier si les couleurs sont similaires
+                                                                if (areColorsSimilar($normalizedCouleur, $normalizedPackingCouleur)) {
+                                                                    foreach ($packingTailles as $packingTaille => $values) {
+                                                                        $normalizedPackingTaille = normalizeSize($packingTaille);
 
-                                                                    // Si les tailles sont identiques
-                                                                    if ($normalizedTaille === $normalizedPackingTaille) {
-                                                                        $packingValue = $values['finis1']; // Assigner la valeur de 'finis1'
-                                                                        $packingFound = true;
-                                                                        break;
+                                                                        // Vérifier si les tailles correspondent
+                                                                        if ($normalizedTaille === $normalizedPackingTaille) {
+                                                                            $packingValue = $values['finis1'] ?? 0; // Utilisation de l'opérateur ?? pour éviter les erreurs
+                                                                            $packingFound = true;
+                                                                            break 2; // Sortir des deux boucles
+                                                                        }
                                                                     }
                                                                 }
                                                             }
+
                                                             if ($packingFound) {
                                                                 break;
                                                             }
                                                         }
+
                                                         // Calculer la somme des quantités envoyées aux dépôts pour la taille en cours
                                                         $sommeQuantitesDepot = 0;
                                                         if (isset($depotsGrouped)) {
