@@ -2011,37 +2011,54 @@ if (!empty($donnees)) {
 </script>
 <script src="./html2pdf.bundle.min.js"></script>
 <script type="text/javascript">
- 
-    function addPdf() {
-        var element = document.getElementById('pdfprint');
-        element.style.width = '100%';  
-        element.style.padding = '20px';
-        element.style.fontSize = 'x-small';
+    var clientName = "<?php echo $client; ?>";
+   function addPdf() {
+    var element = document.getElementById('pdfprint');
+    element.style.width = '100%';
+    element.style.padding = '20px';
+    element.style.fontSize = '12px'; // Augmenter la taille pour une meilleure lisibilité
+    element.style.lineHeight = '1.5'; // Espacement pour améliorer la lisibilité
 
-        // Afficher l'élément de chargement
-        var loading = document.getElementById('loading');
-        loading.style.display = 'flex';  // Affiche le message de chargement avec le spinner
+    // Afficher l'élément de chargement
+    var loading = document.getElementById('loading');
+    loading.style.display = 'flex';
 
-        var opt = {
-            filename: 'suivi_packing.pdf',
-            image: { type: 'jpeg', quality: 0.75 },  
-            html2canvas: { scale: 1.5, useCORS: true },    
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape', compress: true }  
-        };
+    var opt = {
+        margin: [10, 10, 10, 10], // Ajout de marges pour éviter les coupures
+        filename: 'Suivi_production_' + clientName + '.pdf',
+        image: { type: 'jpeg', quality: 0.8 },  // Diminuer la qualité de l'image
+        html2canvas: { 
+            scale: 1.5, // Diminuer la résolution pour réduire la taille du PDF
+            useCORS: true 
+        },    
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'landscape',
+            compress: true
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Empêcher les coupures inutiles
+    };
 
-        // Commencer l'exportation en PDF
-        html2pdf().from(element).set(opt).save().then(function() {
-            // Masquer l'élément de chargement une fois l'exportation terminée
-            loading.style.display = 'none';  
-        }).catch(function(err) {
-            console.error('Erreur lors de l\'exportation du PDF : ', err);
-            loading.style.display = 'none';  // Masquer même en cas d'erreur
-        });
-    }
+    // Commencer l'exportation en PDF
+    html2pdf().set(opt).from(element).toPdf().get('pdf').then(function(pdf) {
+        var totalPages = pdf.internal.getNumberOfPages();
 
-
+        for (var i = 1; i <= totalPages; i++) {
+            pdf.setPage(i);
+            pdf.setFontSize(10);
+            pdf.text('Page ' + i + ' / ' + totalPages, pdf.internal.pageSize.getWidth() - 20, pdf.internal.pageSize.getHeight() - 10);
+        }
+    }).save().then(function() {
+        // Masquer l'élément de chargement une fois l'exportation terminée
+        loading.style.display = 'none';
+    }).catch(function(err) {
+        console.error('Erreur lors de l\'exportation du PDF : ', err);
+        loading.style.display = 'none';  
+    });
+}
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></>
 
 <script>
 // document.getElementById('exportButton').addEventListener('click', function() {
