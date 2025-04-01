@@ -789,6 +789,7 @@ if (!empty($donnees)) {
                                                <td class="text-dark bg-custom hover-depot" style="cursor:pointer;" data-toggle="modal" data-target="#confirmDeleteModal-<?php echo $modalId; ?>">
                                                     <?php 
                                                         $idDepots = [];
+                                                        
                                                         foreach ($depotData as $tailleData) {
                                                             if (isset($tailleData['iddepot'])) {
                                                                 $idDepots[] = $tailleData['iddepot']; 
@@ -1512,6 +1513,7 @@ if (!empty($donnees)) {
                                                             </div>
                                                             <div class="modal-footer">
                                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                                
                                                                 <button type="button" class="btn btn-danger confirmDelete" data-iddepot="<?php echo implode(',', $idDepots); ?>" data-modalid="<?php echo $modalId; ?>">Confirmer la suppression</button>
                                                             </div>
                                                         </div>

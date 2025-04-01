@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if (!empty($idsArray)) {
             $ids = implode(',', $idsArray); // Rassembler les IDs sécurisés
             $sql = "DELETE FROM depot_packing WHERE id IN ($ids)";
+            
 
             // Exécuter la requête de suppression
             if ($conn->query($sql) === TRUE) {

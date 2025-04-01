@@ -1,8 +1,8 @@
 <?php 
-//SELECT p.*, c.numcde,c.desc_type,c.desc_ref FROM packing p JOIN commande_mvt c ON p.idcomdet = c.idcomdet WHERE p.idcom = 176; requete ilaina iaffichena requete liste commande par exp
 
-// SELECT idcom, ref_exp, MIN(date_depot_packing) AS date_depot_packing, MIN(date_prevu_exp) AS date_prevu_exp, MIN(date_depart_usine) AS date_depart_usine, transitaire, desc_coul, GROUP_CONCAT(desc_taille SEPARATOR '-') AS tailles, SUM(quantite) AS total_quantite, nomcli FROM packing GROUP BY idcom, ref_exp, transitaire, desc_coul, nomcli;
-
+    function supprimerEspaces($chaine) {
+    return str_replace(' ', '', $chaine);
+    }
     if(isset($_GET['idcom'])){
         $idcom=$_GET['idcom'];
         $exp=$_GET['exp'];
@@ -140,17 +140,27 @@
 
                             foreach ($donnees as $desc_ref => $couleurs) { ?>
                                 <?php foreach ($couleurs as $desc_coul => $details) { ?>
-                                    <?php $total = 0; ?>
+                                    
+                                    <?php  $total = 0; ?>
                                     <tr onclick="window.location.href='#';" style="cursor:pointer;">
                                         <td><?php echo $desc_ref; ?></td>
                                         <td><?php echo $desc_coul; ?></td>
                                         <td><?php echo $details['desc_type']; ?></td>
                                         <?php
                                         // Initialise un tableau temporaire pour les quantités par taille.
-                                        $quantities_by_size = array_fill_keys(array_keys($all_sizes), 0);
+                                        $quantities_by_size = array_fill_keys(array_keys($all_sizes), null);
+
+                                      
                                         foreach ($details['sizes'] as $size) {
-                                            $quantities_by_size[$size['desc_taille']] = $size['quantite'];
+                                      
+
+                                            if ($quantities_by_size[$size['desc_taille']] === null || is_string($size['quantite'])) {
+                                                $quantities_by_size[$size['desc_taille']] = (string) $size['quantite'];
+                                            }
+                                         
+
                                         }
+
                                         // Affiche la quantité pour chaque taille et calcule le total.
                                         foreach ($quantities_by_size as $quantite) {
                                             echo "<td>$quantite</td>";
@@ -159,19 +169,22 @@
                                         ?>
                                         <td><?php echo $total; ?></td>
                                     </tr>
+                                    
                                 <?php } ?>
 
                                 <?php
+                             
                                 // Si la référence actuelle est différente de la précédente, affiche le formulaire
                                 if ($desc_ref !== $previous_ref) {
                                     $previous_ref = $desc_ref; // Met à jour la référence précédente
                                 ?>
                                 <tr>
                                     <td colspan="<?php echo count($all_sizes) + 4; ?>" style="text-align: center;">
-                                        <form  id="form-detail-colis-<?php echo htmlspecialchars($desc_ref); ?>" method="post" onsubmit="submitForm(event, '<?php echo htmlspecialchars($desc_ref); ?>')" class="p-3 border rounded">
-                                            <input type="hidden" name="reference" value="<?php echo htmlspecialchars($desc_ref); ?>">
+                                        <form  id="form-detail-colis-<?php echo htmlspecialchars(supprimerEspaces($desc_ref)); ?>" method="post" onsubmit="submitForm(event, '<?php echo htmlspecialchars(supprimerEspaces($desc_ref)); ?>')" class="p-3 border rounded">
+                                            <input type="hidden" name="reference" value="<?php echo htmlspecialchars($desc_ref); ?>"> 
                                             <input type="hidden" name="nomcli" value="<?php echo $first_detail['nomcli']; ?>">
                                             <input type="hidden" name="ref_exp" value="<?php echo $first_detail['ref_exp']; ?>">
+                                            
 
                                             <table class="table table-bordered">
                                                 <thead>
@@ -184,7 +197,9 @@
                                                 <tbody>
                                                     <!-- Ligne pour les champs de poids -->
                                                     <tr>
-                                                        <?php foreach ($quantities_by_size as $taille => $quantite) { ?>
+                                                        
+                                                        <?php foreach ($quantities_by_size as $taille => $quantite) {  ?>
+                                                            
                                                             <?php if ($quantite > 0) { ?>
                                                                 <td>
                                                                     <label for="poids_<?php echo $taille; ?>">Poids d'une pièce</label>
@@ -214,10 +229,10 @@
                                                     </tr>
                                                     <tr>
                                                         <td colspan="5">
-                                                               <select id="cartons_param_<?php echo htmlspecialchars($desc_ref); ?>" name="cartons_param" class="form-control">
-                                                                    <option value="">Sélectionner un carton</option>
-                                                                </select>
-
+                                                           
+                                                             <select onClick="check()"  id="cartons_param_<?php echo supprimerEspaces($desc_ref); ?>" name="cartons_param" class="form-control">
+                                                                <option value="">Sélectionner un carton</option>
+                                                            </select>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -305,12 +320,12 @@
                 });
 
                 // Vérification du champ carton sélectionné
-                const cartonParam = $('#cartons_param_<?php echo htmlspecialchars($desc_ref); ?>').val().trim();
+                const cartonParam = $('#cartons_param_<?php echo htmlspecialchars(supprimerEspaces($desc_ref)); ?>').val().trim();
                 if (cartonParam === "") {
                     formIsValid = false;
-                    $('#cartons_param_<?php echo htmlspecialchars($desc_ref); ?>').addClass('is-invalid');
+                    $('#cartons_param_<?php echo htmlspecialchars(supprimerEspaces($desc_ref)); ?>').addClass('is-invalid');
                 } else {
-                    $('#cartons_param_<?php echo htmlspecialchars($desc_ref); ?>').removeClass('is-invalid');
+                    $('#cartons_param_<?php echo htmlspecialchars(supprimerEspaces($desc_ref)); ?>').removeClass('is-invalid');
                 }
 
                 // Affiche un message d'alerte si un champ est vide
@@ -337,97 +352,101 @@
     </script>
 
     <script>
-        function submitForm(event, formRef) {
-            event.preventDefault(); // Empêche la soumission du formulaire normale
-            // Sélectionne le formulaire en fonction de l'ID dynamique
-            var formData = $('#form-detail-colis-' + formRef).serialize();
-            $.ajax({
-                url: 'add_detail_colis.php',
-                type: 'POST',
-                data: formData,
-                dataType: 'json', // Attente d'une réponse JSON
-                success: function(response) {
-                    if (response.status === 'success') {
-                        alert(response.message); // Message de succès
-                        // Ajouter ici une action supplémentaire, comme rafraîchir une partie de la page
-                    } else {
-                        alert(response.message); // Message d'erreur reçu
-                    }
-                },
-                error: function(xhr, status, error) {
-                console.log("Erreur AJAX : ", error);
-                console.log("Statut : ", status);
-                console.log("Réponse : ", xhr.responseText); // Affiche les erreurs de réponse
-                alert('Une erreur est survenue lors de l\'enregistrement des données.');
-            }
-            });
-        }
-    </script>
-     <script>
-            // Script pour ouvrir la modale
-            document.getElementById('openModalBtn').addEventListener('click', function () {
-                var myModal = new bootstrap.Modal(document.getElementById('dataEntryModal'));
-                myModal.show();
-            });
 
-            // Script pour gérer le formulaire de saisie de données
-            document.getElementById('dataEntryForm').addEventListener('submit', function (event) {
-                event.preventDefault();
-
-                // Récupérer les valeurs saisies
-                const dimensions = document.getElementById('dimensions').value;
-                const poids = document.getElementById('poids').value;
-
-                // Envoyer les données au serveur via une requête AJAX
-                const xhr = new XMLHttpRequest();
-                xhr.open("POST", "save_carton_param.php", true);
-                xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        var myModal = bootstrap.Modal.getInstance(document.getElementById('dataEntryModal'));
-                        myModal.hide();
-                        document.getElementById('dataEntryForm').reset();
-                        // Actualiser la liste des cartons pour chaque formulaire
-                        refreshAllCartonsParams();
-                    }
-                };
-                xhr.send(`dimensions=${dimensions}&poids=${poids}`);
-            });
-
-            // Recharger les données des paramètres de carton
-            function loadCartonsParams(refId) {
-                const xhr = new XMLHttpRequest();
-                xhr.open("GET", "get_cartons_params.php", true);
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        const cartons = JSON.parse(xhr.responseText);
-                        const cartonsParamSelect = document.getElementById(`cartons_param_${refId}`);
-                        cartonsParamSelect.innerHTML = '<option value="">Sélectionner un carton</option>';
-
-                        cartons.forEach(carton => {
-                            const option = document.createElement("option");
-                            option.value = carton.id;
-                            option.text = `${carton.dimension} - ${carton.poids} kg`;
-                            cartonsParamSelect.add(option);
-                        });
-                    }
-                };
-                xhr.send();
+            const check = () => {
+                console.log ($('#cartons_param_<?php echo supprimerEspaces($desc_ref); ?>').val())
             }
 
-            // Fonction pour actualiser la liste des cartons pour chaque formulaire de la page
-            function refreshAllCartonsParams() {
-                <?php foreach ($donnees as $desc_ref => $couleurs) { ?>
-                    loadCartonsParams('<?php echo $desc_ref; ?>');
-                <?php } ?>
+            function submitForm(event, formRef) {
+                event.preventDefault(); // Empêche la soumission du formulaire normale
+
+                // Sélectionne le formulaire en fonction de l'ID dynamique
+                var formData = $('#form-detail-colis-' + formRef).serialize();
+                console.log(formData);
+                $.ajax({
+                    url: 'add_detail_colis.php',
+                    type: 'POST',
+                    data: formData,
+                    dataType: 'json', // Attente d'une réponse JSON
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            alert(response.message); // Message de succès
+                            // Ajouter ici une action supplémentaire, comme rafraîchir une partie de la page
+                        } else {
+                            alert(response.message); // Message d'erreur reçu
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                    console.log("Erreur AJAX : ", error);
+                    console.log("Statut : ", status);
+                    console.log("Réponse : ", xhr.responseText); // Affiche les erreurs de réponse
+                    alert('Une erreur est survenue lors de l\'enregistrement des données.');
+                }
+                });
             }
+        
+                // Script pour ouvrir la modale
+                document.getElementById('openModalBtn').addEventListener('click', function () {
+                    var myModal = new bootstrap.Modal(document.getElementById('dataEntryModal'));
+                    myModal.show();
+                });
 
-            // Appeler refreshAllCartonsParams() lors du chargement de la page
-            window.onload = function () {
-                refreshAllCartonsParams();
-};
+                // Script pour gérer le formulaire de saisie de données
+                document.getElementById('dataEntryForm').addEventListener('submit', function (event) {
+                    event.preventDefault();
 
+                    // Récupérer les valeurs saisies
+                    const dimensions = document.getElementById('dimensions').value;
+                    const poids = document.getElementById('poids').value;
 
+                    // Envoyer les données au serveur via une requête AJAX
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("POST", "save_carton_param.php", true);
+                    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            var myModal = bootstrap.Modal.getInstance(document.getElementById('dataEntryModal'));
+                            myModal.hide();
+                            document.getElementById('dataEntryForm').reset();
+                            // Actualiser la liste des cartons pour chaque formulaire
+                            refreshAllCartonsParams();
+                        }
+                    };
+                    xhr.send(`dimensions=${dimensions}&poids=${poids}`);
+                });
+
+                // Recharger les données des paramètres de carton
+                function loadCartonsParams(refId) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("GET", "get_cartons_params.php", true);
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            const cartons = JSON.parse(xhr.responseText);
+                            const cartonsParamSelect = document.getElementById(`cartons_param_${refId}`);
+                            cartonsParamSelect.innerHTML = '<option value="">Sélectionner un carton</option>';
+
+                            cartons.forEach(carton => {
+                                const option = document.createElement("option");
+                                option.value = carton.id;
+                                option.text = `${carton.dimension} - ${carton.poids} kg`;
+                                cartonsParamSelect.add(option);
+                            });
+                        }
+                    };
+                    xhr.send();
+                }
+
+                // Fonction pour actualiser la liste des cartons pour chaque formulaire de la page
+                function refreshAllCartonsParams() {
+                    <?php foreach ($donnees as $desc_ref => $couleurs) { ?>
+                        loadCartonsParams('<?php echo supprimerEspaces($desc_ref); ?>');
+                    <?php } ?>
+                }
+
+                // Appeler refreshAllCartonsParams() lors du chargement de la page
+                window.onload = function () {
+                    refreshAllCartonsParams();
+        };
 
     </script>
     <!-- Script d'initialisation de DataTables

@@ -14,6 +14,7 @@ $poids_colis = $_POST['poids'] ?? []; // Tableau des poids par taille
 $quantite_colis = $_POST['quantite_colis'] ?? []; // Tableau des quantités par taille
 $carton_param = $_POST['cartons_param'] ?? null;
 
+
 // Vérification des données reçues
 if (is_null($refcde) || is_null($nomcli) || is_null($ref_exp) || empty($poids_colis) || empty($carton_param)) {
     echo json_encode(array('status' => 'error', 'message' => 'Paramètres manquants ou invalides.'));
