@@ -34,11 +34,13 @@ if ($stmt_check->num_rows > 0) {
     $stmt_insert_depot->bind_param("sssii", $couleur, $taille, $nom_depot, $quantite, $idcomdet);
     
     if ($stmt_insert_depot->execute()) {
+        // Récupérer l'ID auto-incrémenté de depot_packing
+        $iddepot = $conn->insert_id;
         // Insérer également dans la table packing si l'insertion depot_packing est réussie
-        $sql_insert_packing = "INSERT INTO packing (desc_coul, desc_taille, ref_exp, quantite, idcomdet, nomcli,date_depot_packing,date_prevu_exp,date_depart_usine,transitaire,idcom) 
-                               VALUES (?, ?, ?, ?, ?, ?,NOW(),NOW(),NOW(),'n/a',?)";
+        $sql_insert_packing = "INSERT INTO packing (iddepot,desc_coul, desc_taille, ref_exp, quantite, idcomdet, nomcli,date_depot_packing,date_prevu_exp,date_depart_usine,transitaire,idcom) 
+                               VALUES (?,?, ?, ?, ?, ?, ?,NOW(),NOW(),NOW(),'n/a',?)";
         $stmt_insert_packing = $conn->prepare($sql_insert_packing);
-        $stmt_insert_packing->bind_param("sssiisi", $couleur, $taille, $nom_depot, $quantite, $idcomdet, $client,$RefCRM);
+        $stmt_insert_packing->bind_param("isssiisi",$iddepot, $couleur, $taille, $nom_depot, $quantite, $idcomdet, $client,$RefCRM);
         
         if ($stmt_insert_packing->execute()) {
             echo json_encode(array('status' => 'success', 'message' => 'Données insérées avec succès dans les deux tables'));

@@ -86,7 +86,6 @@ if ($var != 0) {
         $operation_values[$of][$nom_operation][$couleur][$taille]['finis2'] += $finis2;
         $operation_values[$of][$nom_operation][$couleur][$taille]['retouches'] += $retouches;
     }
-
     sqlsrv_free_stmt($stmt);
 }
 
@@ -775,10 +774,12 @@ if (!empty($donnees)) {
                                                                 'iddepot' => $depot['iddepot']
                                                             ];
                                                         }
+                                                  
                                                     }
                                                 }
                                             }
                                         }
+                                       
 
                                         // Afficher les dépôts groupés
                                         
@@ -897,6 +898,7 @@ if (!empty($donnees)) {
                                                         }
 
                                                         // Calcul du "Reste à envoyer" avec soustraction de la somme des dépôts
+                                                        // var_dump($sommeQuantitesDepot,$packingValue,$details['okprod']);
                                                         $resteEnvoyer = $packingValue - $details['okprod'] - $sommeQuantitesDepot;
                                                         $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
                                                       
@@ -1150,8 +1152,6 @@ if (!empty($donnees)) {
             }
         }
     }
-
-        
     ?>
 
     
@@ -1498,6 +1498,7 @@ if (!empty($donnees)) {
                                                         <?php echo $nomDepot; ?> 
                                                     </span>
                                                 </td>
+
                                                 <!-- Modal de confirmation avant la suppression -->
                                                 <div class="modal fade" id="confirmDeleteModal-<?php echo $modalId; ?>" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel-<?php echo $modalId; ?>" aria-hidden="true">
                                                     <div class="modal-dialog" role="document">
@@ -1528,7 +1529,7 @@ if (!empty($donnees)) {
                                                                     data-iddepot="<?php echo isset($depotData[$taille]['iddepot']) ? $depotData[$taille]['iddepot'] : 'N/A'; ?>" 
                                                                     value="<?php echo $depotData[$taille]['qteDepot']; ?>" 
                                                                     min="0"
-                                                                     style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;"
+                                                                     style="width: 100%; box-sizing: border-box; padding: 8px; margin: 0; border: none;">
                                                             <?php else: ?>
                                                                 N/A 
                                                             <?php endif; ?>
@@ -1558,6 +1559,8 @@ if (!empty($donnees)) {
                                                         $normalizedTaille = normalizeSize($taille);
                                                         $packingFound = false;
                                                         $packingValue = 0;
+                                                        $totalPackingValue = 0; // Initialisation
+
                                                         foreach ($operation_values as $of => $operations) {
                                                             if (!isset($operations['Entrée Packing'])) {
                                                                 continue; // Si l'opération "Entrée Packing" n'existe pas, on passe à l'OF suivant
@@ -1573,18 +1576,19 @@ if (!empty($donnees)) {
 
                                                                         // Vérifier si les tailles correspondent
                                                                         if ($normalizedTaille === $normalizedPackingTaille) {
-                                                                            $packingValue = $values['finis1'] ?? 0; // Utilisation de l'opérateur ?? pour éviter les erreurs
-                                                                            $packingFound = true;
-                                                                            break 2; // Sortir des deux boucles
+                                                                            $packingValue = $values['finis1'] ?? 0; // Valeur de finis1 ou 0 si non défini
+                                                                            $totalPackingValue += $packingValue; // Ajouter à la somme totale
                                                                         }
                                                                     }
                                                                 }
                                                             }
-
-                                                            if ($packingFound) {
-                                                                break;
-                                                            }
                                                         }
+
+                                                        // Vérifier si au moins une valeur a été trouvée
+                                                        if ($totalPackingValue > 0) {
+                                                            $packingFound = true;
+                                                        }
+
 
                                                         // Calculer la somme des quantités envoyées aux dépôts pour la taille en cours
                                                         $sommeQuantitesDepot = 0;
@@ -1597,7 +1601,7 @@ if (!empty($donnees)) {
                                                         }
 
                                                         // Calcul du "Reste à envoyer" avec soustraction de la somme des dépôts
-                                                        $resteEnvoyer = $packingValue - $details['okprod'] - $sommeQuantitesDepot;
+                                                        $resteEnvoyer = $totalPackingValue - $details['okprod'] - $sommeQuantitesDepot;
                                                         $resteEnvoyerArray[$taille][$idcomdet] = $resteEnvoyer;
                                                          
                                                         // Affichage de la valeur "Reste à envoyer" (celle de "Entrée Packing" si trouvé)

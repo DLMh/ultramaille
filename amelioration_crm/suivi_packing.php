@@ -11,7 +11,7 @@ $_SESSION["last_act"]=time();
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-    <title>Menu aministrateur</title>
+    <title>Menu production</title>
     <link rel="stylesheet" href="../general/assets/bootstrap/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800&amp;display=swap">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
@@ -56,7 +56,7 @@ $_SESSION["last_act"]=time();
     <div style="background: url(&quot;../general/assets/img/fond-marche.jpg&quot;);height: 400px;">
         <h1 class="text-light justify-content-center align-items-center align-content-around" data-aos="fade-right" data-aos-once="true" style="text-align: center;font-size: 30px;margin-top: 0px;padding: 0px;padding-top: 165px;">Bienvenue <?php echo $_SESSION["civ"]." ".$_SESSION["vnom"]." ".$_SESSION["vpren"];?></h1>
     </div>
-    <h2 style="text-align: center;margin-top: 36px;margin-bottom: 35px;border-style: none;">Menu Administrateur</h2>
+    <h2 style="text-align: center;margin-top: 36px;margin-bottom: 35px;border-style: none;">Menu Production</h2>
     <div class="container">
         <div class="row">
         <?php
