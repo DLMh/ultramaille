@@ -1498,7 +1498,6 @@ if (!empty($donnees)) {
                                                         <?php echo $nomDepot; ?> 
                                                     </span>
                                                 </td>
-
                                                 <!-- Modal de confirmation avant la suppression -->
                                                 <div class="modal fade" id="confirmDeleteModal-<?php echo $modalId; ?>" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel-<?php echo $modalId; ?>" aria-hidden="true">
                                                     <div class="modal-dialog" role="document">
